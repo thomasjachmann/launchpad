@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'rake'
 
+require File.join(File.dirname(__FILE__), 'lib', 'launchpad', 'version')
+
 begin
   require 'jeweler'
   Jeweler::Tasks.new do |gem|
@@ -9,6 +11,7 @@ begin
     gem.description = 'This gem provides an interface to access novation\'s launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad\'s MIDI input/output.'
     gem.email = 'tom.j@gmx.net'
     gem.homepage = 'http://github.com/thomasjachmann/launchpad'
+    gem.version = Launchpad::VERSION
     gem.authors = ['Thomas Jachmann']
     gem.add_dependency('portmidi')
     #gem.add_development_dependency 'thoughtbot-shoulda', '>= 0'
