@@ -25,6 +25,7 @@ class Launchpad
       :input        => true,
       :output       => true
     }.merge(opts || {})
+    Portmidi.start
     if opts[:input]
       input_device = Portmidi.input_devices.select {|device| device.name == opts[:device_name]}.first
       @input = Portmidi::Input.new(input_device.device_id)
