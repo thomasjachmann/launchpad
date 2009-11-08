@@ -13,6 +13,31 @@ Sometimes, the launchpad won't react to anything. Don't despair, just dis- and r
 * Jan Krutisch's {portmidi gem}[http://github.com/halfbyte/portmidi]
 
 
+== Installation
+
+The gem is hosted on Gemcutter[http://gemcutter.org/], so in order to use it, you're gonna install the gemcutter gem (for details, see their site):
+
+  gem install gemcutter
+  gem tumble
+
+After that, it's a simple gem install:
+
+  gem install launchpad
+
+
+== Usage
+
+  require 'rubygems'
+  require 'launchpad'
+  
+  launchpad = Launchpad.new
+  launchpad.light_all
+  sleep 1
+  launchpad.reset
+  sleep 1
+  launchpad.single :x => 4, :y => 4, :red => 3, :green => 1
+
+
 == Near future plans
 
 * dedicated interaction with control buttons (top and right row)
