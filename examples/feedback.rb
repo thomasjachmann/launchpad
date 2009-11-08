@@ -1,4 +1,4 @@
-require 'base'
+require "#{File.dirname(__FILE__)}/../lib/launchpad"
 
 Launchpad.start do |l, x, y, state|
   l.single(:x => x, :y => y, :red => state ? 3 : 0)

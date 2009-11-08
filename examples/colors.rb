@@ -1,4 +1,4 @@
-require 'base'
+require "#{File.dirname(__FILE__)}/../lib/launchpad"
 
 l = Launchpad.new(:input => false, :output => true)
 
