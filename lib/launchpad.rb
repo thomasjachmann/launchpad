@@ -60,8 +60,15 @@ class Launchpad
     launchpad.reset if launchpad
   end
   
+  # Reset the launchpad - all settings are reset and all LEDs are switched off
+  def reset
+    output(CC, 0x00, 0x00)
+  end
+  
+  # Light all LEDs (for testing purposes)
+  # takes an optional parameter brightness (1-3, defaults to 3)
   def light_all(brightness = 3)
-    output(CC, 0x00, 124 + brightness)
+    output(CC, 0x00, 124 + min_max_color(brightness, false))
   end
   
   def start_buffering
@@ -77,15 +84,16 @@ class Launchpad
     end
   end
   
-  def reset
-    output(CC, 0x00, 0x00)
-  end
-  
+  # Switches a single LED
+  # * :x      => x coordinate (0 based from top left, mandatory)
+  # * :y      => y coordinate (0 based from top left, mandatory)
+  # * :red    => brightness of red LED (0-3, optional, defaults to 0)
+  # * :green  => brightness of red LED (0-3, optional, defaults to 0)
+  # * :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
   def single(opts)
-    code = opts[:code] || ON
     location = location(opts)
     velocity = velocity(opts)
-    output(code, location, velocity)
+    output(ON, location, velocity)
   end
   
   def multi(*velocities)
@@ -93,18 +101,22 @@ class Launchpad
     output(0x92, *velocities)
   end
   
+  # Switches LEDs marked as flashing on (when using custom timer for flashing)
   def custom_flashing_on
     output(CC, 0x00, 0x20)
   end
   
+  # Switches LEDs marked as flashing off (when using custom timer for flashing)
   def custom_flashing_off
     output(CC, 0x00, 0x21)
   end
   
+  # Starts flashing LEDs marked as flashing automatically
   def start_auto_flashing
     output(CC, 0x00, 0x28)
   end
   
+  # Stops flashing LEDs marked as flashing automatically (turning them on)
   alias_method :stop_auto_flashing, :custom_flashing_on
   
   def coordinates(location)
@@ -139,14 +151,18 @@ class Launchpad
   end
   
   def velocity(opts)
-    red = (opts[:red] || 0).to_i
-    green = (opts[:green] || 0).to_i
+    red = min_max_color(opts[:red] || 0)
+    green = min_max_color(opts[:green] || 0)
     flags = case opts[:mode]
     when :flashing  then  8
     when :buffering then  0
     else                  12
     end
     (16 * (green)) + red + flags
+  end
+  
+  def min_max_color(color, with_off = true)
+    [[with_off ? 0 : 1, color.to_i].max, 3].min
   end
   
 end
