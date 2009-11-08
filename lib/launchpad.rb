@@ -1,3 +1,5 @@
+require 'portmidi'
+
 class Launchpad
   
   class LaunchpadError < StandardError; end
