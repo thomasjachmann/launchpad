@@ -1,0 +1,26 @@
+= launchpad
+
+This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad's MIDI input/output.
+
+This is the first version, nothing sophisticated, but you can access the launchpad already. In and out. The API might change quite a bit during the next releases, so don't rely on it, this is work in progress. If you need anything or think the interface could be improved in any way, please contact me.
+
+Sometimes, the launchpad won't react to anything. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
+
+
+== Requirements
+
+* Jan Krutisch's portmidi gem
+* Roger B. Dannenberg's portmidi library
+
+
+== Near future plans
+
+* dedicated interaction with control buttons (top and right row)
+* listeners for presses on single buttons/button areas
+* double buffering (already there but has some glitches)
+* bitmap rendering
+
+
+== Copyright
+
+Copyright (c) 2009 Thomas Jachmann. See LICENSE for details.

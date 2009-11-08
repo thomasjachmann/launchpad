@@ -1,4 +1,4 @@
-require "#{File.dirname(__FILE__)}/../lib/launchpad"
+require File.join(File.dirname(__FILE__), 'setup')
 
 l = Launchpad.new(:input => false, :output => true)
 
