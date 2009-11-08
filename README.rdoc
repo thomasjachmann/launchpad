@@ -9,8 +9,8 @@ Sometimes, the launchpad won't react to anything. Don't despair, just dis- and r
 
 == Requirements
 
-* Jan Krutisch's portmidi gem
-* Roger B. Dannenberg's portmidi library
+* Roger B. Dannenberg's {portmidi library}[http://sourceforge.net/projects/portmedia/]
+* Jan Krutisch's {portmidi gem}[http://github.com/halfbyte/portmidi]
 
 
 == Near future plans
