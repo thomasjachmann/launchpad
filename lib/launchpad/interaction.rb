@@ -64,14 +64,14 @@ module Launchpad
     # state_transition  => which state transition to react to, one of :down, :up, :both, optional, defaults to :both
     def register_interactor(types = :all, state_transition = :both, &block)
       Array(types).each do |type|
-        interactors[type] << Interactor.new(block, state_transition)
+        interactors[type.to_sym] << Interactor.new(block, state_transition)
       end
     end
     
     # Clears interactors
     # type  => the type of interactor to clear, one of :all (not meaning "all interactors" but "interactors registered for type :all"), :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to nil (meaning "all interactors")
     def clear_interactors(type = nil)
-      (type.nil? ? interactors : interactors[type]).clear
+      (type.nil? ? interactors : interactors[type.to_sym]).clear
     end
     
     # Calls interactors
