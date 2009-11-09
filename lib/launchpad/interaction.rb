@@ -74,16 +74,18 @@ module Launchpad
       (type.nil? ? interactors : interactors[type]).clear
     end
     
+    # Calls interactors
+    # action => see Launchpad::Device#pending_user_actions
+    def call_interactors(action)
+      (interactors[action[:type].to_sym] + interactors[:all]).each do |interactor|
+        interactor.block.call(@device, action) if interactor.responsible?(action[:state])
+      end
+    end
+    
     private
     
     def interactors
       @interactors ||= Hash.new {|hash, key| hash[key] = []}
-    end
-    
-    def call_interactors(action)
-      (interactors[action[:type]] + interactors[:all]).each do |interactor|
-        interactor.block.call(@device, action) if interactor.responsible?(action[:state])
-      end
     end
     
   end
