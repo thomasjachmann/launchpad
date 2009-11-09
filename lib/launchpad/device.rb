@@ -47,27 +47,30 @@ module Launchpad
       end
     end
     
-    # Switches a single LED
+    # Changes a single LED
     # * :type   => one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :grid, where :x and :y have to be specified
     # * :x      => x coordinate (0 based from top left, mandatory if :type is :grid)
     # * :y      => y coordinate (0 based from top left, mandatory if :type is :grid)
     # * :red    => brightness of red LED (0-3, optional, defaults to 0)
     # * :green  => brightness of red LED (0-3, optional, defaults to 0)
     # * :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
-    def single(opts)
+    def change(opts)
       output(code(opts), note(opts), velocity(opts))
     end
     
-    # Switches all LEDs at once
+    # Changes all LEDs at once
     # velocities is an array of arrays, each containing a
     # color value calculated using the formula
     # color = 16 * green + red
     # with green and red each ranging from 0-3
     # first the grid, then the scene buttons (top to bottom), then the top control buttons (left to right), maximum 80 values
-    def multi(*colors)
+    def change_all(*colors)
+      # ensure that colors is at least and most 80 elements long
       colors = colors.flatten[0..79]
       colors += [0] * (80 - colors.size) if colors.size < 80
+      # HACK switch off first grid LED to reset rapid LED change pointer
       output(MidiCodes::ON, 0, 0)
+      # send colors in slices of 2
       colors.each_slice(2) do |c1, c2|
         output(MidiCodes::MULTI, velocity(c1), velocity(c2))
       end

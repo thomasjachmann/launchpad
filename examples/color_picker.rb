@@ -44,7 +44,7 @@ colors_mirrored = [
 def display_color_view(colors)
   lambda do |device, action|
     # set color
-    device.multi(colors)
+    device.change_all(colors)
     (1..8).each do |i|
       # deregister color picker interactor
       @interaction.clear_interactors(:"scene#{i}")
@@ -64,7 +64,7 @@ def display_color(opts)
     @green = opts[:green] if opts[:green]
     colors = [(@green * 16 + @red)] * 64
     scenes = [@red == 3 ? 51 : 3, @red == 2 ? 51 : 2, @red == 1 ? 51 : 1, @red == 0 ? 51 : 0, @green == 3 ? 51 : 48, @green == 2 ? 51 : 32, @green == 1 ? 51 : 16, @green == 0 ? 51 : 0]
-    device.multi(colors + scenes + [16, 16, 16, 48])
+    device.change_all(colors + scenes + [16, 16, 16, 48])
   end
 end
 @interaction.register_interactor(:right, :down) do |device, action|
@@ -87,7 +87,7 @@ end
 
 # mixer button terminates interaction on button up
 @interaction.register_interactor(:mixer) do |device, action|
-  device.single(:type => :mixer, :red => action[:state] == :down ? :hi : :off)
+  device.change(:type => :mixer, :red => action[:state] == :down ? :hi : :off)
   @interaction.stop if action[:state] == :up
 end
 
