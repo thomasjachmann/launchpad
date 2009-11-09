@@ -4,19 +4,13 @@ module Launchpad
     
     class Interactor
       
-      attr_accessor :block, :state_transition
-      
-      def initialize(block, state_transition)
+      def initialize(block, state)
         @block = block
-        @state_transition = state_transition
+        @state = state.to_sym
       end
       
-      def responsible?(state)
-        case state_transition
-        when :down  then  state
-        when :up    then  !state
-        else              true
-        end
+      def act_if_responsible(device, action)
+        @block.call(device, action) if @state == :both || @state == action[:state]
       end
       
     end
@@ -60,11 +54,11 @@ module Launchpad
     end
     
     # Registers an interactor
-    # types              => the type of event to react on, one or more of :all, :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :all
-    # state_transition  => which state transition to react to, one of :down, :up, :both, optional, defaults to :both
-    def register_interactor(types = :all, state_transition = :both, &block)
+    # types => the type of event to react on, one or more of :all, :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :all
+    # state => which state transition to react to, one of :down, :up, :both, optional, defaults to :both
+    def register_interactor(types = :all, state = :both, &block)
       Array(types).each do |type|
-        interactors[type.to_sym] << Interactor.new(block, state_transition)
+        interactors[type.to_sym] << Interactor.new(block, state)
       end
     end
     
@@ -78,7 +72,7 @@ module Launchpad
     # action => see Launchpad::Device#pending_user_actions
     def call_interactors(action)
       (interactors[action[:type].to_sym] + interactors[:all]).each do |interactor|
-        interactor.block.call(@device, action) if interactor.responsible?(action[:state])
+        interactor.act_if_responsible(@device, action)
       end
     end
     

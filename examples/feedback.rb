@@ -2,20 +2,20 @@ require File.join(File.dirname(__FILE__), 'setup')
 
 interaction = Launchpad::Interaction.new
 
-# red feedback for grid buttons
+# yellow feedback for grid buttons
 interaction.register_interactor(:grid) do |device, action|
-  device.single(:x => action[:x], :y => action[:y], :red => action[:state] ? :hi : :off)
+  brightness = action[:state] == :down ? :hi : :off
+  device.single(:x => action[:x], :y => action[:y], :red => brightness, :green => brightness)
 end
 
-# green feedback for top control buttons
+# red feedback for top control buttons
 interaction.register_interactor([:up, :down, :left, :right, :session, :user1, :user2, :mixer]) do |device, action|
-  device.single(:type => action[:type], :green => action[:state] ? :hi : :off)
+  device.single(:type => action[:type], :red => action[:state] == :down ? :hi : :off)
 end
 
-# yellow feedback for scene buttons
+# green feedback for scene buttons
 interaction.register_interactor([:scene1, :scene2, :scene3, :scene4, :scene5, :scene6, :scene7, :scene8]) do |device, action|
-  brightness = action[:state] ? :hi : :off
-  device.single(:type => action[:type], :red => brightness, :green => brightness)
+  device.single(:type => action[:type], :green => action[:state] == :down ? :hi : :off)
 end
 
 # mixer button terminates interaction on button up

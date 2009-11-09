@@ -105,7 +105,7 @@ module Launchpad
     # [
     #   {
     #     :timestamp  => integer indicating the time when the action occured
-    #     :state      => true/false, whether the button has been pressed or released
+    #     :state      => :down/:up, whether the button has been pressed or released
     #     :type       => which button has been pressed, one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8
     #     :x          => x coordinate (0-7), only set when :type is :grid
     #     :y          => y coordinate (0-7), only set when :type is :grid
@@ -116,7 +116,7 @@ module Launchpad
         (code, note, velocity) = midi_message[:message]
         data = {
           :timestamp  => midi_message[:timestamp],
-          :state      => (velocity == 127)
+          :state      => (velocity == 127 ? :down : :up)
         }
         data[:type] = case code
         when MidiCodes::ON
