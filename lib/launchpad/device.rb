@@ -6,6 +6,8 @@ module Launchpad
   
   class Device
     
+    include MidiCodes
+    
     # Initializes the launchpad
     # {
     #   :device_name  => Name of the MIDI device to use, optional, defaults to Launchpad
@@ -23,31 +25,31 @@ module Launchpad
       
       if opts[:input]
         input_device = Portmidi.input_devices.select {|device| device.name == opts[:device_name]}.first
-        raise NoSuchDeviceError.new("input device #{opts[:device_name]} doesn't exist") if input_device.nil?
+        raise NoSuchDeviceError.new("MIDI input device #{opts[:device_name]} doesn't exist") if input_device.nil?
         @input = Portmidi::Input.new(input_device.device_id)
       end
       
       if opts[:output]
         output_device = Portmidi.output_devices.select {|device| device.name == opts[:device_name]}.first
-        raise NoSuchDeviceError.new("output device #{opts[:device_name]} doesn't exist") if output_device.nil?
+        raise NoSuchDeviceError.new("MIDI output device #{opts[:device_name]} doesn't exist") if output_device.nil?
         @output = Portmidi::Output.new(output_device.device_id)
         reset
       end
     end
     
-    # Reset the launchpad - all settings are reset and all LEDs are switched off
+    # Resets the launchpad - all settings are reset and all LEDs are switched off
     def reset
-      output(MidiCodes::CC, MidiCodes::NIL, MidiCodes::NIL)
+      output(Status::CC, Status::NIL, Status::NIL)
     end
     
-    # Light all LEDs (for testing purposes)
+    # Lights all LEDs (for testing purposes)
     # takes an optional parameter brightness (:off/:low/:medium/:high, defaults to :high)
-    def light_all(brightness = :high)
+    def test_leds(brightness = :high)
       brightness = brightness(brightness)
       if brightness == 0
         reset
       else
-        output(MidiCodes::CC, MidiCodes::NIL, MidiCodes::LIGHT_ALL + brightness)
+        output(Status::CC, Status::NIL, Velocity::TEST_LEDS + brightness)
       end
     end
     
@@ -73,26 +75,26 @@ module Launchpad
       colors = colors.flatten[0..79]
       colors += [0] * (80 - colors.size) if colors.size < 80
       # HACK switch off first grid LED to reset rapid LED change pointer
-      output(MidiCodes::ON, 0, 0)
+      output(Status::ON, 0, 0)
       # send colors in slices of 2
       colors.each_slice(2) do |c1, c2|
-        output(MidiCodes::MULTI, velocity(c1), velocity(c2))
+        output(Status::MULTI, velocity(c1), velocity(c2))
       end
     end
     
     # Switches LEDs marked as flashing on (when using custom timer for flashing)
     def flashing_on
-      output(MidiCodes::CC, MidiCodes::NIL, MidiCodes::FLASH_ON)
+      output(Status::CC, Status::NIL, Velocity::FLASHING_ON)
     end
-
+    
     # Switches LEDs marked as flashing off (when using custom timer for flashing)
     def flashing_off
-      output(MidiCodes::CC, MidiCodes::NIL, MidiCodes::FLASH_OFF)
+      output(Status::CC, Status::NIL, Velocity::FLASHING_OFF)
     end
-
-    # Starts flashing LEDs marked as flashing automatically
+    
+    # Starts flashing LEDs marked as flashing automatically (stop by calling #flashing_on or #flashing_off)
     def flashing_auto
-      output(MidiCodes::CC, MidiCodes::NIL, MidiCodes::FLASH_AUTO)
+      output(Status::CC, Status::NIL, Velocity::FLASHING_AUTO)
     end
     
     #   def start_buffering
@@ -126,33 +128,31 @@ module Launchpad
           :state      => (velocity == 127 ? :down : :up)
         }
         data[:type] = case code
-        when MidiCodes::ON
+        when Status::ON
           case note
-          when MidiCodes::BTN_SCENE1  then :scene1
-          when MidiCodes::BTN_SCENE2  then :scene2
-          when MidiCodes::BTN_SCENE3  then :scene3
-          when MidiCodes::BTN_SCENE4  then :scene4
-          when MidiCodes::BTN_SCENE5  then :scene5
-          when MidiCodes::BTN_SCENE6  then :scene6
-          when MidiCodes::BTN_SCENE7  then :scene7
-          when MidiCodes::BTN_SCENE8  then :scene8
+          when SceneButton::SCENE1 then :scene1
+          when SceneButton::SCENE2 then :scene2
+          when SceneButton::SCENE3 then :scene3
+          when SceneButton::SCENE4 then :scene4
+          when SceneButton::SCENE5 then :scene5
+          when SceneButton::SCENE6 then :scene6
+          when SceneButton::SCENE7 then :scene7
+          when SceneButton::SCENE8 then :scene8
           else
             data[:x] = note % 16
             data[:y] = note / 16
             :grid
           end
-        when MidiCodes::CC
+        when Status::CC
           case note
-          when MidiCodes::BTN_UP      then :up
-          when MidiCodes::BTN_DOWN    then :down
-          when MidiCodes::BTN_LEFT    then :left
-          when MidiCodes::BTN_RIGHT   then :right
-          when MidiCodes::BTN_SESSION then :session
-          when MidiCodes::BTN_USER1   then :user1
-          when MidiCodes::BTN_USER2   then :user2
-          when MidiCodes::BTN_MIXER   then :mixer
-          else
-            # TODO raise error
+          when ControlButton::UP       then :up
+          when ControlButton::DOWN     then :down
+          when ControlButton::LEFT     then :left
+          when ControlButton::RIGHT    then :right
+          when ControlButton::SESSION  then :session
+          when ControlButton::USER1    then :user1
+          when ControlButton::USER2    then :user2
+          when ControlButton::MIXER    then :mixer
           end
         end
         data
@@ -174,29 +174,29 @@ module Launchpad
     
     def code(opts)
       case opts[:type]
-      when :up, :down, :left, :right, :session, :user1, :user2, :mixer then MidiCodes::CC
-      else MidiCodes::ON
+      when :up, :down, :left, :right, :session, :user1, :user2, :mixer then Status::CC
+      else Status::ON
       end
     end
     
     def note(opts)
       case opts[:type]
-      when :up      then MidiCodes::BTN_UP
-      when :down    then MidiCodes::BTN_DOWN
-      when :left    then MidiCodes::BTN_LEFT
-      when :right   then MidiCodes::BTN_RIGHT
-      when :session then MidiCodes::BTN_SESSION
-      when :user1   then MidiCodes::BTN_USER1
-      when :user2   then MidiCodes::BTN_USER2
-      when :mixer   then MidiCodes::BTN_MIXER
-      when :scene1  then MidiCodes::BTN_SCENE1
-      when :scene2  then MidiCodes::BTN_SCENE2
-      when :scene3  then MidiCodes::BTN_SCENE3
-      when :scene4  then MidiCodes::BTN_SCENE4
-      when :scene5  then MidiCodes::BTN_SCENE5
-      when :scene6  then MidiCodes::BTN_SCENE6
-      when :scene7  then MidiCodes::BTN_SCENE7
-      when :scene8  then MidiCodes::BTN_SCENE8
+      when :up      then ControlButton::UP
+      when :down    then ControlButton::DOWN
+      when :left    then ControlButton::LEFT
+      when :right   then ControlButton::RIGHT
+      when :session then ControlButton::SESSION
+      when :user1   then ControlButton::USER1
+      when :user2   then ControlButton::USER2
+      when :mixer   then ControlButton::MIXER
+      when :scene1  then SceneButton::SCENE1
+      when :scene2  then SceneButton::SCENE2
+      when :scene3  then SceneButton::SCENE3
+      when :scene4  then SceneButton::SCENE4
+      when :scene5  then SceneButton::SCENE5
+      when :scene6  then SceneButton::SCENE6
+      when :scene7  then SceneButton::SCENE7
+      when :scene8  then SceneButton::SCENE8
       else
         x = (opts[:x] || -1).to_i
         y = (opts[:y] || -1).to_i
