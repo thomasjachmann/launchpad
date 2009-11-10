@@ -28,14 +28,14 @@ After that, it's a simple gem install:
 == Usage
 
   require 'rubygems'
-  require 'launchpad'
+  require 'launchpad/device'
   
   device = Launchpad::Device.new
-  device.light_all
+  device.test_leds
   sleep 1
   device.reset
   sleep 1
-  device.change :x => 4, :y => 4, :red => 3, :green => 1
+  device.change :grid, :x => 4, :y => 4, :red => :high, :green => :low
 
 For more details, see the examples. examples/color_picker.rb is the most complex example with interaction.
 

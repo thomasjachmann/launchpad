@@ -54,14 +54,17 @@ module Launchpad
     end
     
     # Changes a single LED
-    # * :type   => one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :grid, where :x and :y have to be specified
-    # * :x      => x coordinate (0 based from top left, mandatory if :type is :grid)
-    # * :y      => y coordinate (0 based from top left, mandatory if :type is :grid)
-    # * :red    => brightness of red LED (0-3, optional, defaults to 0)
-    # * :green  => brightness of red LED (0-3, optional, defaults to 0)
-    # * :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
-    def change(opts)
-      output(code(opts), note(opts), velocity(opts))
+    # type   => one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8
+    # opts => {
+    #   :x      => x coordinate (0 based from top left, mandatory if type is :grid)
+    #   :y      => y coordinate (0 based from top left, mandatory if type is :grid)
+    #   :red    => brightness of red LED (0-3, optional, defaults to 0)
+    #   :green  => brightness of red LED (0-3, optional, defaults to 0)
+    #   :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
+    # }
+    def change(type, opts)
+      status = %w(up down left right session user1 user2 mixer).include?(type.to_s) ? Status::CC : Status::ON
+      output(status, note(type, opts), velocity(opts))
     end
     
     # Changes all LEDs at once
@@ -172,15 +175,8 @@ module Launchpad
       nil
     end
     
-    def code(opts)
-      case opts[:type]
-      when :up, :down, :left, :right, :session, :user1, :user2, :mixer then Status::CC
-      else Status::ON
-      end
-    end
-    
-    def note(opts)
-      case opts[:type]
+    def note(type, opts)
+      case type
       when :up      then ControlButton::UP
       when :down    then ControlButton::DOWN
       when :left    then ControlButton::LEFT
@@ -200,7 +196,7 @@ module Launchpad
       else
         x = (opts[:x] || -1).to_i
         y = (opts[:y] || -1).to_i
-        raise NoValidGridCoordinatesError.new('you need to specify valid coordinates (x/y, 0-7, from top left)') if x < 0 || x > 7 || y < 0 || y > 7
+        raise NoValidGridCoordinatesError.new("you need to specify valid coordinates (x/y, 0-7, from top left), you specified: x=#{x}, y=#{y}") if x < 0 || x > 7 || y < 0 || y > 7
         y * 16 + x
       end
     end
@@ -228,7 +224,7 @@ module Launchpad
       when 2, :medium,  :med  then 2
       when 3, :high,    :hi   then 3
       else
-        raise NoValidBrightnessError.new('you need to specify the brightness as 0/1/2/3, :off/:low/:medium/:high or :off/:lo/:hi')
+        raise NoValidBrightnessError.new("you need to specify the brightness as 0/1/2/3, :off/:low/:medium/:high or :off/:lo/:hi, you specified: #{brightness}")
       end
     end
     

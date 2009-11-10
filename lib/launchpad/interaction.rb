@@ -4,20 +4,7 @@ module Launchpad
   
   class Interaction
     
-    class Interactor
-      
-      def initialize(block, state)
-        @block = block
-        @state = state.to_sym
-      end
-      
-      def act_if_responsible(device, action)
-        @block.call(device, action) if @state == :both || @state == action[:state]
-      end
-      
-    end
-    
-    attr_reader :device, :interacting
+    attr_reader :device, :active
     
     # Initializes the launchpad interaction
     # {
@@ -30,7 +17,7 @@ module Launchpad
       @device = opts[:device]
       @device_name = opts[:device_name]
       @latency = (opts[:latency] || 0.001).to_f.abs
-      @interacting = false
+      @active = false
     end
     
     # Starts interacting with the launchpad, blocking
@@ -40,9 +27,9 @@ module Launchpad
         device_opts[:device_name] = @device_name unless @device_name.nil?
         @device = Device.new(device_opts)
       end
-      @interacting = true
-      while @interacting do
-        @device.pending_user_actions.each {|action| call_interactors(action)}
+      @active = true
+      while @active do
+        @device.pending_user_actions.each {|action| respond_to_action(action)}
         sleep @latency unless @latency == 0
       end
       @device.reset
@@ -52,36 +39,52 @@ module Launchpad
     
     # Stops interacting with the launchpad
     def stop
-      @interacting = false
+      @active = false
     end
     
-    # Registers an interactor
-    # types => the type of event to react on, one or more of :all, :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :all
-    # state => which state transition to react to, one of :down, :up, :both, optional, defaults to :both
-    def register_interactor(types = :all, state = :both, &block)
+    # Registers a response to one or more actions
+    # types => the type of action to respond to, one or more of :all, :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to :all
+    # state => which state transition to respond to, one of :down, :up, :both, optional, defaults to :both
+    # opts => {
+    #   :exclusive => whether all other responses to the given types shall be deregistered first
+    # }
+    def response_to(types = :all, state = :both, opts = nil, &block)
+      opts ||= {}
+      no_response_to(types) if opts[:exclusive] == true
       Array(types).each do |type|
-        interactors[type.to_sym] << Interactor.new(block, state)
+        responses[type.to_sym] << [state, block]
       end
     end
     
-    # Clears interactors
-    # type  => the type of interactor to clear, one of :all (not meaning "all interactors" but "interactors registered for type :all"), :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to nil (meaning "all interactors")
-    def clear_interactors(type = nil)
-      (type.nil? ? interactors : interactors[type.to_sym]).clear
+    # Deregisters all responses to one or more actions
+    # type  => the type of response to clear, one or more of :all (not meaning "all responses" but "responses registered for type :all"), :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to nil (meaning "all responses")
+    def no_response_to(types = nil)
+      Array(types).each do |type|
+        (type.nil? ? responses : responses[type.to_sym]).clear
+      end
     end
     
-    # Calls interactors
-    # action => see Launchpad::Device#pending_user_actions
-    def call_interactors(action)
-      (interactors[action[:type].to_sym] + interactors[:all]).each do |interactor|
-        interactor.act_if_responsible(@device, action)
-      end
+    # Responds to an action by executing all matching responses
+    # type => the type of action to respond to, one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8
+    # state => which state transition to respond to, one of :down, :up
+    # opts => {
+    #   :x => x coordinate (0 based from top left)
+    #   :y => y coordinate (0 based from top left)
+    # }, unused unless type is :grid
+    def respond_to(type, state, opts = nil)
+      respond_to_action((opts || {}).merge(:type => type, :state => state))
     end
     
     private
     
-    def interactors
-      @interactors ||= Hash.new {|hash, key| hash[key] = []}
+    def responses
+      @responses ||= Hash.new {|hash, key| hash[key] = []}
+    end
+    
+    def respond_to_action(action)
+      (responses[action[:type].to_sym] + responses[:all]).each do |state, block|
+        block.call(self, action) if state == :both || state == action[:state]
+      end
     end
     
   end
