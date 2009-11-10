@@ -17,7 +17,7 @@ module Launchpad
       
     end
     
-    attr_accessor :device, :interacting
+    attr_reader :device, :interacting
     
     # Initializes the launchpad interaction
     # {
