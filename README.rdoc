@@ -4,7 +4,7 @@ This gem provides an interface to access novation's launchpad programmatically. 
 
 This is the first version, nothing sophisticated, but you can access the launchpad already. In and out. The API might change quite a bit during the next releases, so don't rely on it, this is work in progress. If you need anything or think the interface could be improved in any way, please contact me.
 
-Sometimes, the launchpad won't react to anything. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
+Sometimes, the launchpad won't react to anything or react to/light up the wrong LEDs. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
 
 
 == Requirements
@@ -27,6 +27,8 @@ After that, it's a simple gem install:
 
 == Usage
 
+This is a simple example (only requiring the device for output) that switches on all LEDs (for testing), resets the launchpad again and then lights the grid button at position 4/4 (from top left).
+
   require 'rubygems'
   require 'launchpad/device'
   
@@ -37,14 +39,27 @@ After that, it's a simple gem install:
   sleep 1
   device.change :grid, :x => 4, :y => 4, :red => :high, :green => :low
 
+This is an interaction example lighting all grid buttons in red when pressed and keeping them lit.
+
+  require 'rubygems'
+  require 'launchpad'
+  
+  interaction = Launchpad::Interaction.new
+  interaction.response_to(:grid, :down) do |interaction, action|
+    interaction.device.change(:grid, action.merge(:red => :high))
+  end
+  
+  interaction.start
+
+
 For more details, see the examples. examples/color_picker.rb is the most complex example with interaction.
 
 
 == Near future plans
 
-* dedicated interaction with control buttons (top and right row)
-* listeners for presses on single buttons/button areas
-* double buffering (already there but has some glitches)
+* close devices properly as soon as halfbyte's pulled my changes to portmidi
+* interaction responses for presses on single grid buttons/button areas
+* double buffering
 * bitmap rendering
 
 
