@@ -1,3 +1,5 @@
+require 'launchpad/device'
+
 module Launchpad
   
   class Interaction

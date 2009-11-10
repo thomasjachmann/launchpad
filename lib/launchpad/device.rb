@@ -1,3 +1,7 @@
+require 'launchpad/errors'
+require 'launchpad/midi_codes'
+require 'launchpad/version'
+
 module Launchpad
   
   class Device
