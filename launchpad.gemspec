@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{launchpad}
-  s.version = "0.0.2"
+  s.version = "0.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Thomas Jachmann"]
-  s.date = %q{2009-11-08}
+  s.date = %q{2009-11-11}
   s.description = %q{This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad's MIDI input/output.}
   s.email = %q{tom.j@gmx.net}
   s.extra_rdoc_files = [
@@ -22,15 +22,22 @@ Gem::Specification.new do |s|
      "LICENSE",
      "README.rdoc",
      "Rakefile",
+     "examples/color_picker.rb",
      "examples/colors.rb",
      "examples/feedback.rb",
+     "examples/reset.rb",
      "examples/setup.rb",
      "experiments/wandering_dot.rb",
      "launchpad.gemspec",
      "lib/launchpad.rb",
+     "lib/launchpad/device.rb",
+     "lib/launchpad/errors.rb",
+     "lib/launchpad/interaction.rb",
+     "lib/launchpad/midi_codes.rb",
      "lib/launchpad/version.rb",
      "test/helper.rb",
-     "test/test_launchpad-gem.rb"
+     "test/test_device.rb",
+     "test/test_interaction.rb"
   ]
   s.homepage = %q{http://github.com/thomasjachmann/launchpad}
   s.rdoc_options = ["--charset=UTF-8"]
@@ -39,9 +46,12 @@ Gem::Specification.new do |s|
   s.summary = %q{A gem for accessing novation's launchpad programmatically and easily.}
   s.test_files = [
     "test/helper.rb",
-     "test/test_launchpad-gem.rb",
+     "test/test_device.rb",
+     "test/test_interaction.rb",
+     "examples/color_picker.rb",
      "examples/colors.rb",
      "examples/feedback.rb",
+     "examples/reset.rb",
      "examples/setup.rb"
   ]
 
@@ -51,11 +61,17 @@ Gem::Specification.new do |s|
 
     if Gem::Version.new(Gem::RubyGemsVersion) >= Gem::Version.new('1.2.0') then
       s.add_runtime_dependency(%q<portmidi>, [">= 0"])
+      s.add_development_dependency(%q<thoughtbot-shoulda>, [">= 0"])
+      s.add_development_dependency(%q<mocha>, [">= 0"])
     else
       s.add_dependency(%q<portmidi>, [">= 0"])
+      s.add_dependency(%q<thoughtbot-shoulda>, [">= 0"])
+      s.add_dependency(%q<mocha>, [">= 0"])
     end
   else
     s.add_dependency(%q<portmidi>, [">= 0"])
+    s.add_dependency(%q<thoughtbot-shoulda>, [">= 0"])
+    s.add_dependency(%q<mocha>, [">= 0"])
   end
 end
 
