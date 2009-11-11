@@ -1,8 +1,8 @@
 = launchpad
 
-This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad's MIDI input/output.
+This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
 
-This is the first version, nothing sophisticated, but you can access the launchpad already. In and out. The API might change quite a bit during the next releases, so don't rely on it, this is work in progress. If you need anything or think the interface could be improved in any way, please contact me.
+The interfaces should be rather stable now, so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
 
 Sometimes, the launchpad won't react to anything or react to/light up the wrong LEDs. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
 
@@ -26,6 +26,11 @@ After that, it's a simple gem install:
 
 
 == Usage
+
+There are two main entry points:
+
+* require 'launchpad/device', providing Launchpad::Device, which handles all the basic input/output stuff
+* require 'launchpad/interaction' or just 'launchpad', additionally providing Launchpad::Interaction, which lets you respond to actions (button presses/releases)
 
 This is a simple example (only requiring the device for output) that switches on all LEDs (for testing), resets the launchpad again and then lights the grid button at position 4/4 (from top left).
 
