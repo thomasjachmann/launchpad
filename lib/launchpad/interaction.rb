@@ -30,7 +30,7 @@ module Launchpad
       @active = true
       while @active do
         @device.read_pending_actions.each {|action| respond_to_action(action)}
-        sleep @latency unless @latency == 0
+        sleep @latency unless @latency <= 0
       end
       @device.reset
     rescue Portmidi::DeviceError => e
@@ -49,18 +49,21 @@ module Launchpad
     #   :exclusive => whether all other responses to the given types shall be deregistered first
     # }
     def response_to(types = :all, state = :both, opts = nil, &block)
+      types = Array(types)
       opts ||= {}
-      no_response_to(types) if opts[:exclusive] == true
-      Array(types).each do |type|
-        responses[type.to_sym] << [state, block]
+      no_response_to(types, state) if opts[:exclusive] == true
+      Array(state == :both ? %w(down up) : state).each do |state|
+        types.each {|type| responses[type.to_sym][state.to_sym] << block}
       end
     end
     
     # Deregisters all responses to one or more actions
     # type  => the type of response to clear, one or more of :all (not meaning "all responses" but "responses registered for type :all"), :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8, optional, defaults to nil (meaning "all responses")
-    def no_response_to(types = nil)
-      Array(types).each do |type|
-        (type.nil? ? responses : responses[type.to_sym]).clear
+    # state => which state transition to not respond to, one of :down, :up, :both, optional, defaults to :both
+    def no_response_to(types = nil, state = :both)
+      types = Array(types)
+      Array(state == :both ? %w(down up) : state).each do |state|
+        types.each {|type| responses[type.to_sym][state.to_sym].clear}
       end
     end
     
@@ -78,13 +81,13 @@ module Launchpad
     private
     
     def responses
-      @responses ||= Hash.new {|hash, key| hash[key] = []}
+      @responses ||= Hash.new {|hash, key| hash[key] = {:down => [], :up => []}}
     end
     
     def respond_to_action(action)
-      (responses[action[:type].to_sym] + responses[:all]).each do |state, block|
-        block.call(self, action) if state == :both || state == action[:state]
-      end
+      type = action[:type].to_sym
+      state = action[:state].to_sym
+      (responses[type][state] + responses[:all][state]).each {|block| block.call(self, action)}
     end
     
   end
