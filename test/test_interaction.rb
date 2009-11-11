@@ -6,8 +6,14 @@ class TestInteraction < Test::Unit::TestCase
   
   context 'initializer' do
     
-    should 'leave device empty if not given' do
-      assert_nil Launchpad::Interaction.new.device
+    should 'create device if not given' do
+      Launchpad::Device.expects(:new).with(:input => true, :output => true).returns('device')
+      assert_equal 'device', Launchpad::Interaction.new.device
+    end
+    
+    should 'create device with given device_name' do
+      Launchpad::Device.expects(:new).with(:device_name => 'device', :input => true, :output => true).returns('device')
+      assert_equal 'device', Launchpad::Interaction.new(:device_name => 'device').device
     end
     
     should 'initialize device if given' do
@@ -25,48 +31,13 @@ class TestInteraction < Test::Unit::TestCase
     # this is kinda greybox tested, since I couldn't come up with another way to test a loop [thomas, 2009-11-11]
     
     setup do
-      @interaction = Launchpad::Interaction.new
-      @device = Launchpad::Device.new
-      Launchpad::Device.stubs(:new).returns(@device)
+      @interaction = Launchpad::Interaction.new(:device => @device = Launchpad::Device.new)
     end
     
     context 'up until read_pending_actions' do
       
       setup do
         @device.stubs(:read_pending_actions).raises(BreakError)
-      end
-      
-      should 'create new device' do
-        begin
-          Launchpad::Device.expects(:new).with(:input => true, :output => true).returns(@device)
-          @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
-          assert_same @device, @interaction.device
-        end
-      end
-      
-      should 'create new device with given device_name' do
-        begin
-          @interaction = Launchpad::Interaction.new(:device_name => 'given')
-          Launchpad::Device.expects(:new).with(:input => true, :output => true, :device_name => 'given').returns(@device)
-          @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
-          assert_same @device, @interaction.device
-        end
-      end
-      
-      should 'not create new device when one is given' do
-        begin
-          @interaction = Launchpad::Interaction.new(:device => @device)
-          assert_same @device, @interaction.device
-          Launchpad::Device.expects(:new).never
-          @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
-          assert_same @device, @interaction.device
-        end
       end
       
       should 'set active to true' do
@@ -116,8 +87,18 @@ class TestInteraction < Test::Unit::TestCase
       
       should 'sleep with given latency' do
         begin
-          @interaction = Launchpad::Interaction.new(:latency => 4)
+          @interaction = Launchpad::Interaction.new(:latency => 4, :device => @device)
           @interaction.expects(:sleep).with(4).raises(BreakError)
+          @interaction.start
+          fail 'should raise BreakError'
+        rescue BreakError
+        end
+      end
+      
+      should 'sleep with absolute value of given negative latency' do
+        begin
+          @interaction = Launchpad::Interaction.new(:latency => -3.1, :device => @device)
+          @interaction.expects(:sleep).with(3.1).raises(BreakError)
           @interaction.start
           fail 'should raise BreakError'
         rescue BreakError

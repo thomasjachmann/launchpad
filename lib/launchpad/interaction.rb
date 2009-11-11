@@ -14,19 +14,13 @@ module Launchpad
     # }
     def initialize(opts = nil)
       opts ||= {}
-      @device = opts[:device]
-      @device_name = opts[:device_name]
+      @device = opts[:device] || Device.new(opts.merge(:input => true, :output => true))
       @latency = (opts[:latency] || 0.001).to_f.abs
       @active = false
     end
     
     # Starts interacting with the launchpad, blocking
     def start
-      if @device.nil?
-        device_opts = {:input => true, :output => true}
-        device_opts[:device_name] = @device_name unless @device_name.nil?
-        @device = Device.new(device_opts)
-      end
       @active = true
       while @active do
         @device.read_pending_actions.each {|action| respond_to_action(action)}
