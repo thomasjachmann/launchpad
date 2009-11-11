@@ -6,6 +6,9 @@ module Launchpad
   # Error raised when the MIDI device specified doesn't exist
   class NoSuchDeviceError < LaunchpadError; end
   
+  # Error raised when the MIDI device specified is busy
+  class DeviceBusyError < LaunchpadError; end
+  
   # Error raised when an input has been requested, although
   # launchpad has been initialized without input
   class NoInputAllowedError < LaunchpadError; end

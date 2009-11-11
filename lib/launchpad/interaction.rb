@@ -29,7 +29,7 @@ module Launchpad
       end
       @active = true
       while @active do
-        @device.pending_user_actions.each {|action| respond_to_action(action)}
+        @device.read_pending_actions.each {|action| respond_to_action(action)}
         sleep @latency unless @latency == 0
       end
       @device.reset

@@ -28,13 +28,21 @@ module Launchpad
       if opts[:input]
         input_device = Portmidi.input_devices.select {|device| device.name == opts[:device_name]}.first
         raise NoSuchDeviceError.new("MIDI input device #{opts[:device_name]} doesn't exist") if input_device.nil?
-        @input = Portmidi::Input.new(input_device.device_id)
+        begin
+          @input = Portmidi::Input.new(input_device.device_id)
+        rescue RuntimeError => e
+          raise DeviceBusyError.new(e)
+        end
       end
       
       if opts[:output]
         output_device = Portmidi.output_devices.select {|device| device.name == opts[:device_name]}.first
         raise NoSuchDeviceError.new("MIDI output device #{opts[:device_name]} doesn't exist") if output_device.nil?
-        @output = Portmidi::Output.new(output_device.device_id)
+        begin
+          @output = Portmidi::Output.new(output_device.device_id)
+        rescue RuntimeError => e
+          raise DeviceBusyError.new(e)
+        end
         reset
       end
     end
@@ -64,7 +72,8 @@ module Launchpad
     #   :green  => brightness of red LED (0-3, optional, defaults to 0)
     #   :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
     # }
-    def change(type, opts)
+    def change(type, opts = nil)
+      opts ||= {}
       status = %w(up down left right session user1 user2 mixer).include?(type.to_s) ? Status::CC : Status::ON
       output(status, note(type, opts), velocity(opts))
     end
@@ -125,7 +134,7 @@ module Launchpad
     #     :y          => y coordinate (0-7), only set when :type is :grid
     #   }, ...
     # ]
-    def pending_user_actions
+    def read_pending_actions
       Array(input).collect do |midi_message|
         (code, note, velocity) = midi_message[:message]
         data = {
