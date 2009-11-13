@@ -2,7 +2,7 @@
 
 This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
 
-The interfaces should be rather stable now, so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
+The interfaces should be rather stable now (sorry, I changed quite a bit since the last release), so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
 
 Sometimes, the launchpad won't react to anything or react to/light up the wrong LEDs. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
 
@@ -62,7 +62,7 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Near future plans
 
-* close devices properly as soon as halfbyte's pulled my changes to portmidi
+* close devices properly
 * interaction responses for presses on single grid buttons/button areas
 * double buffering
 * bitmap rendering
