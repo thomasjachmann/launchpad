@@ -19,6 +19,16 @@ module Launchpad
       @active = false
     end
     
+    # Closes the interaction's device - nothing can be done with the interaction/device afterwards
+    def close
+      @device.close
+    end
+    
+    # Determines whether this interaction's device has been closed
+    def closed?
+      @device.closed?
+    end
+    
     # Starts interacting with the launchpad, blocking
     def start
       @active = true
@@ -29,16 +39,6 @@ module Launchpad
       @device.reset
     rescue Portmidi::DeviceError => e
       raise CommunicationError.new(e)
-    end
-    
-    # Closes the interaction's device - nothing can be done with the interaction/device afterwards
-    def close
-      @device.close
-    end
-    
-    # Determines whether this interaction's device has been closed
-    def closed?
-      @device.closed?
     end
     
     # Stops interacting with the launchpad
