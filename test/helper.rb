@@ -19,8 +19,6 @@ end
 # mock Portmidi for tests
 module Portmidi
   
-  class DeviceError < StandardError; end
-  
   class Input
     attr_accessor :device_id
     def initialize(device_id)
