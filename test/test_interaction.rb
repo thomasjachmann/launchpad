@@ -26,6 +26,24 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
+  context 'close' do
+    
+    should 'close device' do
+      interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
+      device.expects(:close)
+      interaction.close
+    end
+    
+    should 'craise NoInputAllowedError on subsequent accesses' do
+      interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
+      interaction.close
+      assert_raise Launchpad::NoInputAllowedError do
+        interaction.start
+      end
+    end
+    
+  end
+  
   context 'start' do
     
     # this is kinda greybox tested, since I couldn't come up with another way to test a loop [thomas, 2009-11-11]

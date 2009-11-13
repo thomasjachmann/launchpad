@@ -113,6 +113,36 @@ class TestDevice < Test::Unit::TestCase
     
   end
   
+  context 'close' do
+    
+    should 'not fail when neither input nor output are there' do
+      Launchpad::Device.new(:input => false, :output => false).close
+    end
+    
+    context 'with input and output devices' do
+      
+      setup do
+        Portmidi::Input.stubs(:new).returns(@input = mock('input'))
+        Portmidi::Output.stubs(:new).returns(@output = mock('output', :write => nil))
+        @device = Launchpad::Device.new
+      end
+      
+      should 'close input/output and raise NoInputAllowedError/NoOutputAllowedError on subsequent read/write accesses' do
+        @input.expects(:close)
+        @output.expects(:close)
+        @device.close
+        assert_raise Launchpad::NoInputAllowedError do
+          @device.read_pending_actions
+        end
+        assert_raise Launchpad::NoOutputAllowedError do
+          @device.change(:session)
+        end
+      end
+      
+    end
+    
+  end
+  
   {
     :reset          => [0xB0, 0x00, 0x00],
     :flashing_on    => [0xB0, 0x00, 0x20],

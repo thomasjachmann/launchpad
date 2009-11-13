@@ -31,6 +31,10 @@ module Launchpad
       raise CommunicationError.new(e)
     end
     
+    def close
+      @device.close
+    end
+    
     # Stops interacting with the launchpad
     def stop
       @active = false

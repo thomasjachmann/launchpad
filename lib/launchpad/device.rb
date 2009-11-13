@@ -47,6 +47,14 @@ module Launchpad
       end
     end
     
+    # Closes the device - nothing can be done with the device afterwards
+    def close
+      @input.close unless @input.nil?
+      @input = nil
+      @output.close unless @output.nil?
+      @output = nil
+    end
+    
     # Resets the launchpad - all settings are reset and all LEDs are switched off
     def reset
       output(Status::CC, Status::NIL, Status::NIL)
