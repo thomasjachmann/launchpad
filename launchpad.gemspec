@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Thomas Jachmann"]
-  s.date = %q{2009-11-11}
+  s.date = %q{2009-11-13}
   s.description = %q{This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad's MIDI input/output.}
   s.email = %q{tom.j@gmx.net}
   s.extra_rdoc_files = [
@@ -24,6 +24,8 @@ Gem::Specification.new do |s|
      "Rakefile",
      "examples/color_picker.rb",
      "examples/colors.rb",
+     "examples/doodle.rb",
+     "examples/drawing_board.rb",
      "examples/feedback.rb",
      "examples/reset.rb",
      "examples/setup.rb",
@@ -50,6 +52,8 @@ Gem::Specification.new do |s|
      "test/test_interaction.rb",
      "examples/color_picker.rb",
      "examples/colors.rb",
+     "examples/doodle.rb",
+     "examples/drawing_board.rb",
      "examples/feedback.rb",
      "examples/reset.rb",
      "examples/setup.rb"
