@@ -143,6 +143,29 @@ class TestDevice < Test::Unit::TestCase
     
   end
   
+  context 'closed?' do
+    
+    should 'return true when neither input nor output are there' do
+      assert Launchpad::Device.new(:input => false, :output => false).closed?
+    end
+    
+    should 'return false when initialized with input' do
+      assert !Launchpad::Device.new(:input => true, :output => false).closed?
+    end
+    
+    should 'return false when initialized with output' do
+      assert !Launchpad::Device.new(:input => false, :output => true).closed?
+    end
+    
+    should 'return false when initialized with both but true after calling close' do
+      d = Launchpad::Device.new
+      assert !d.closed?
+      d.close
+      assert d.closed?
+    end
+    
+  end
+  
   {
     :reset          => [0xB0, 0x00, 0x00],
     :flashing_on    => [0xB0, 0x00, 0x20],

@@ -44,6 +44,17 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
+  context 'closed?' do
+    
+    should 'return false on a newly created interaction, but true after closing' do
+      interaction = Launchpad::Interaction.new
+      assert !interaction.closed?
+      interaction.close
+      assert interaction.closed?
+    end
+    
+  end
+  
   context 'start' do
     
     # this is kinda greybox tested, since I couldn't come up with another way to test a loop [thomas, 2009-11-11]

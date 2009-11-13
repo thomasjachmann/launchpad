@@ -24,6 +24,8 @@ module Portmidi
     def initialize(device_id)
       self.device_id = device_id
     end
+    def read(*args); nil; end
+    def close; nil; end
   end
   
   class Output
@@ -31,6 +33,8 @@ module Portmidi
     def initialize(device_id)
       self.device_id = device_id
     end
+    def write(*args); nil; end
+    def close; nil; end
   end
   
   def self.input_devices; mock_devices; end

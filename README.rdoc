@@ -62,7 +62,6 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Near future plans
 
-* close devices properly
 * interaction responses for presses on single grid buttons/button areas
 * double buffering
 * bitmap rendering

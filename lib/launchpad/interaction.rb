@@ -31,8 +31,14 @@ module Launchpad
       raise CommunicationError.new(e)
     end
     
+    # Closes the interaction's device - nothing can be done with the interaction/device afterwards
     def close
       @device.close
+    end
+    
+    # Determines whether this interaction's device has been closed
+    def closed?
+      @device.closed?
     end
     
     # Stops interacting with the launchpad
