@@ -12,9 +12,9 @@ module Launchpad
     
     # Initializes the launchpad
     # {
-    #   :device_name  => Name of the MIDI device to use, optional, defaults to Launchpad
-    #   :input        => true/false, whether to use MIDI input for user interaction, optional, defaults to true
-    #   :output       => true/false, whether to use MIDI output for data display, optional, defaults to true
+    #   :device_name      => Name of the MIDI device to use, optional, defaults to Launchpad
+    #   :input            => true/false, whether to use MIDI input for user interaction, optional, defaults to true
+    #   :output           => true/false, whether to use MIDI output for data display, optional, defaults to true
     # }
     def initialize(opts = nil)
       opts = {
@@ -25,26 +25,9 @@ module Launchpad
       
       Portmidi.start
       
-      if opts[:input]
-        input_device = Portmidi.input_devices.select {|device| device.name == opts[:device_name]}.first
-        raise NoSuchDeviceError.new("MIDI input device #{opts[:device_name]} doesn't exist") if input_device.nil?
-        begin
-          @input = Portmidi::Input.new(input_device.device_id)
-        rescue RuntimeError => e
-          raise DeviceBusyError.new(e)
-        end
-      end
-      
-      if opts[:output]
-        output_device = Portmidi.output_devices.select {|device| device.name == opts[:device_name]}.first
-        raise NoSuchDeviceError.new("MIDI output device #{opts[:device_name]} doesn't exist") if output_device.nil?
-        begin
-          @output = Portmidi::Output.new(output_device.device_id)
-        rescue RuntimeError => e
-          raise DeviceBusyError.new(e)
-        end
-        reset
-      end
+      @input = device(Portmidi.input_devices, Portmidi::Input, :name => opts[:device_name]) if opts[:input]
+      @output = device(Portmidi.output_devices, Portmidi::Output, :name => opts[:device_name]) if opts[:output]
+      reset if output_enabled?
     end
     
     # Closes the device - nothing can be done with the device afterwards
@@ -57,7 +40,17 @@ module Launchpad
     
     # Determines whether this device has been closed
     def closed?
-      @input.nil? && @output.nil?
+      !(input_enabled? || output_enabled?)
+    end
+    
+    # Determines whether this device can be used to read input
+    def input_enabled?
+      !@input.nil?
+    end
+    
+    # Determines whether this device can be used to output data
+    def output_enabled?
+      !@output.nil?
     end
     
     # Resets the launchpad - all settings are reset and all LEDs are switched off
@@ -187,6 +180,17 @@ module Launchpad
     end
     
     private
+    
+    def device(devices, device_type, opts)
+      id = opts[:id]
+      device = devices.select {|device| device.name == opts[:name]}.first
+      raise NoSuchDeviceError.new("MIDI device #{opts[:name]} doesn't exist") if device.nil?
+      begin
+        device_type.new(device.device_id)
+      rescue RuntimeError => e
+        raise DeviceBusyError.new(e)
+      end
+    end
     
     def input
       raise NoInputAllowedError if @input.nil?
