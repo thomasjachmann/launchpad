@@ -73,10 +73,20 @@ class TestDevice < Test::Unit::TestCase
       assert_nil d.instance_variable_get('@output')
     end
     
-    should 'initialize the correct input output devices' do
+    should 'initialize the correct input output devices when specified by name' do
       Portmidi.stubs(:input_devices).returns(mock_devices(:id => 4, :name => 'Launchpad Name'))
       Portmidi.stubs(:output_devices).returns(mock_devices(:id => 5, :name => 'Launchpad Name'))
       d = Launchpad::Device.new(:device_name => 'Launchpad Name')
+      assert_equal Portmidi::Input, (input = d.instance_variable_get('@input')).class
+      assert_equal 4, input.device_id
+      assert_equal Portmidi::Output, (output = d.instance_variable_get('@output')).class
+      assert_equal 5, output.device_id
+    end
+    
+    should 'initialize the correct input output devices when specified by id' do
+      Portmidi.stubs(:input_devices).returns(mock_devices(:id => 4))
+      Portmidi.stubs(:output_devices).returns(mock_devices(:id => 5))
+      d = Launchpad::Device.new(:input_device_id => 4, :output_device_id => 5, :device_name => 'nonexistant')
       assert_equal Portmidi::Input, (input = d.instance_variable_get('@input')).class
       assert_equal 4, input.device_id
       assert_equal Portmidi::Output, (output = d.instance_variable_get('@output')).class

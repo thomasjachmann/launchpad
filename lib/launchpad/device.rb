@@ -12,6 +12,8 @@ module Launchpad
     
     # Initializes the launchpad
     # {
+    #   :input_device_id  => ID of the MIDI input device to use, optional, :device_name will be used if omitted
+    #   :output_device_id => ID of the MIDI output device to use, optional, :device_name will be used if omitted
     #   :device_name      => Name of the MIDI device to use, optional, defaults to Launchpad
     #   :input            => true/false, whether to use MIDI input for user interaction, optional, defaults to true
     #   :output           => true/false, whether to use MIDI output for data display, optional, defaults to true
@@ -25,8 +27,8 @@ module Launchpad
       
       Portmidi.start
       
-      @input = device(Portmidi.input_devices, Portmidi::Input, :name => opts[:device_name]) if opts[:input]
-      @output = device(Portmidi.output_devices, Portmidi::Output, :name => opts[:device_name]) if opts[:output]
+      @input = device(Portmidi.input_devices, Portmidi::Input, :id => opts[:input_device_id], :name => opts[:device_name]) if opts[:input]
+      @output = device(Portmidi.output_devices, Portmidi::Output, :id => opts[:output_device_id], :name => opts[:device_name]) if opts[:output]
       reset if output_enabled?
     end
     
@@ -183,13 +185,14 @@ module Launchpad
     
     def device(devices, device_type, opts)
       id = opts[:id]
-      device = devices.select {|device| device.name == opts[:name]}.first
-      raise NoSuchDeviceError.new("MIDI device #{opts[:name]} doesn't exist") if device.nil?
-      begin
-        device_type.new(device.device_id)
-      rescue RuntimeError => e
-        raise DeviceBusyError.new(e)
+      if id.nil?
+        device = devices.select {|device| device.name == opts[:name]}.first
+        id = device.device_id unless device.nil?
       end
+      raise NoSuchDeviceError.new("MIDI device #{opts[:id] || opts[:name]} doesn't exist") if id.nil?
+      device_type.new(id)
+    rescue RuntimeError => e
+      raise DeviceBusyError.new(e)
     end
     
     def input
