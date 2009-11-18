@@ -6,21 +6,46 @@ require 'launchpad/version'
 
 module Launchpad
   
+  # This class is used to exchange data with the launchpad.
+  # It provides methods to light LEDs and to get information about button presses/releases.
+  # 
+  # Example:
+  # 
+  #   require 'rubygems'
+  #   require 'launchpad/device'
+  #   
+  #   device = Launchpad::Device.new
+  #   device.test_leds
+  #   sleep 1
+  #   device.reset
+  #   sleep 1
+  #   device.change :grid, :x => 4, :y => 4, :red => :high, :green => :low
   class Device
     
     include MidiCodes
     
-    # Initializes the launchpad
-    # {
-    #   :input_device_id  => ID of the MIDI input device to use, optional, :device_name will be used if omitted
-    #   :output_device_id => ID of the MIDI output device to use, optional, :device_name will be used if omitted
-    #   :device_name      => Name of the MIDI device to use, optional, defaults to Launchpad
-    #   :input            => true/false, whether to use MIDI input for user interaction, optional, defaults to true
-    #   :output           => true/false, whether to use MIDI output for data display, optional, defaults to true
-    # }
+    # Initializes the launchpad device. When output capabilities are requested,
+    # the launchpad will be reset.
+    # 
+    # Optional options hash:
+    # 
+    # [<tt>:input</tt>]             whether to use MIDI input for user interaction,
+    #                               <tt>true/false</tt>, optional, defaults to +true+
+    # [<tt>:output</tt>]            whether to use MIDI output for data display,
+    #                               <tt>true/false</tt>, optional, defaults to +true+
+    # [<tt>:input_device_id</tt>]   ID of the MIDI input device to use,
+    #                               optional, <tt>:device_name</tt> will be used if omitted
+    # [<tt>:output_device_id</tt>]  ID of the MIDI output device to use,
+    #                               optional, <tt>:device_name</tt> will be used if omitted
+    # [<tt>:device_name</tt>]       Name of the MIDI device to use,
+    #                               optional, defaults to "Launchpad"
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoSuchDeviceError] when device with ID or name specified does not exist
+    # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def initialize(opts = nil)
       opts = {
-        :device_name  => 'Launchpad',
         :input        => true,
         :output       => true
       }.merge(opts || {})
@@ -32,7 +57,7 @@ module Launchpad
       reset if output_enabled?
     end
     
-    # Closes the device - nothing can be done with the device afterwards
+    # Closes the device - nothing can be done with the device afterwards.
     def close
       @input.close unless @input.nil?
       @input = nil
@@ -40,28 +65,39 @@ module Launchpad
       @output = nil
     end
     
-    # Determines whether this device has been closed
+    # Determines whether this device has been closed.
     def closed?
       !(input_enabled? || output_enabled?)
     end
     
-    # Determines whether this device can be used to read input
+    # Determines whether this device can be used to read input.
     def input_enabled?
       !@input.nil?
     end
     
-    # Determines whether this device can be used to output data
+    # Determines whether this device can be used to output data.
     def output_enabled?
       !@output.nil?
     end
     
-    # Resets the launchpad - all settings are reset and all LEDs are switched off
+    # Resets the launchpad - all settings are reset and all LEDs are switched off.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def reset
       output(Status::CC, Status::NIL, Status::NIL)
     end
     
-    # Lights all LEDs (for testing purposes)
-    # takes an optional parameter brightness (:off/:low/:medium/:high, defaults to :high)
+    # Lights all LEDs (for testing purposes).
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+brightness+] brightness of both LEDs for all buttons
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def test_leds(brightness = :high)
       brightness = brightness(brightness)
       if brightness == 0
@@ -71,27 +107,52 @@ module Launchpad
       end
     end
     
-    # Changes a single LED
-    # type   => one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8
-    # opts => {
-    #   :x      => x coordinate (0 based from top left, mandatory if type is :grid)
-    #   :y      => y coordinate (0 based from top left, mandatory if type is :grid)
-    #   :red    => brightness of red LED (0-3, optional, defaults to 0)
-    #   :green  => brightness of red LED (0-3, optional, defaults to 0)
-    #   :mode   => button behaviour (:normal, :flashing, :buffering, optional, defaults to :normal)
-    # }
+    # Changes a single LED.
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+type+] type of the button to change
+    # 
+    # Optional options hash (see Launchpad for values):
+    # 
+    # [<tt>:x</tt>]     x coordinate
+    # [<tt>:y</tt>]     y coordinate
+    # [<tt>:red</tt>]   brightness of red LED
+    # [<tt>:green</tt>] brightness of green LED
+    # [<tt>:mode</tt>]  button mode
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoValidGridCoordinatesError] when coordinates aren't within the valid range
+    # [Launchpad::NoValidBrightnessError] when brightness values aren't within the valid range
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def change(type, opts = nil)
       opts ||= {}
       status = %w(up down left right session user1 user2 mixer).include?(type.to_s) ? Status::CC : Status::ON
       output(status, note(type, opts), velocity(opts))
     end
     
-    # Changes all LEDs at once
-    # velocities is an array of arrays, each containing a
-    # color value calculated using the formula
-    # color = 16 * green + red
-    # with green and red each ranging from 0-3
-    # first the grid, then the scene buttons (top to bottom), then the top control buttons (left to right), maximum 80 values
+    # Changes all LEDs in batch mode.
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+colors] an array of colors, each either being an integer or a Hash
+    #           * integer: calculated using the formula
+    #             <tt>color = 16 * green + red</tt>
+    #           * Hash:
+    #             [<tt>:red</tt>]   brightness of red LED
+    #             [<tt>:green</tt>] brightness of green LED
+    #             [<tt>:mode</tt>]  button mode
+    #           the array consists of 64 colors for the grid buttons,
+    #           8 colors for the scene buttons (top to bottom)
+    #           and 8 colors for the top control buttons (left to right),
+    #           maximum 80 values - excessive values will be ignored,
+    #           missing values will be filled with 0
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoValidBrightnessError] when brightness values aren't within the valid range
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def change_all(*colors)
       # ensure that colors is at least and most 80 elements long
       colors = colors.flatten[0..79]
@@ -104,17 +165,30 @@ module Launchpad
       end
     end
     
-    # Switches LEDs marked as flashing on (when using custom timer for flashing)
+    # Switches LEDs marked as flashing on when using custom timer for flashing.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_on
       output(Status::CC, Status::NIL, Velocity::FLASHING_ON)
     end
     
-    # Switches LEDs marked as flashing off (when using custom timer for flashing)
+    # Switches LEDs marked as flashing off when using custom timer for flashing.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_off
       output(Status::CC, Status::NIL, Velocity::FLASHING_OFF)
     end
     
-    # Starts flashing LEDs marked as flashing automatically (stop by calling #flashing_on or #flashing_off)
+    # Starts flashing LEDs marked as flashing automatically.
+    # Stop flashing by calling flashing_on or flashing_off.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_auto
       output(Status::CC, Status::NIL, Velocity::FLASHING_AUTO)
     end
@@ -132,16 +206,21 @@ module Launchpad
     #     end
     #   end
     
-    # Reads user actions (button presses/releases) that aren't handled yet
-    # [
-    #   {
-    #     :timestamp  => integer indicating the time when the action occured
-    #     :state      => :down/:up, whether the button has been pressed or released
-    #     :type       => which button has been pressed, one of :grid, :up, :down, :left, :right, :session, :user1, :user2, :mixer, :scene1 - :scene8
-    #     :x          => x coordinate (0-7), only set when :type is :grid
-    #     :y          => y coordinate (0-7), only set when :type is :grid
-    #   }, ...
-    # ]
+    # Reads user actions (button presses/releases) that haven't been handled yet.
+    # 
+    # Returns:
+    # 
+    # an array of hashes with (see Launchpad for values):
+    # 
+    # [<tt>:timestamp</tt>] integer indicating the time when the action occured
+    # [<tt>:state</tt>]     state of the button after action
+    # [<tt>:type</tt>]      type of the button
+    # [<tt>:x</tt>]         x coordinate
+    # [<tt>:y</tt>]         y coordinate
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoInputAllowedError] when input is not enabled
     def read_pending_actions
       Array(input).collect do |midi_message|
         (code, note, velocity) = midi_message[:message]
@@ -183,10 +262,33 @@ module Launchpad
     
     private
     
+    # Creates input/output devices.
+    # 
+    # Parameters:
+    # 
+    # [+devices+]     array of portmidi devices
+    # [+device_type]  class to instantiate (<tt>Portmidi::Input/Portmidi::Output</tt>)
+    # 
+    # Options hash:
+    # 
+    # [<tt>:id</tt>]    id of the MIDI device to use
+    # [<tt>:name</tt>]  name of the MIDI device to use,
+    #                   only used when <tt>:id</tt> is not specified,
+    #                   defaults to "Launchpad"
+    # 
+    # Returns:
+    # 
+    # newly created device
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoSuchDeviceError] when device with ID or name specified does not exist
+    # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def device(devices, device_type, opts)
       id = opts[:id]
       if id.nil?
-        device = devices.select {|device| device.name == opts[:name]}.first
+        name = opts[:name] || 'Launchpad'
+        device = devices.select {|device| device.name == name}.first
         id = device.device_id unless device.nil?
       end
       raise NoSuchDeviceError.new("MIDI device #{opts[:id] || opts[:name]} doesn't exist") if id.nil?
@@ -195,17 +297,62 @@ module Launchpad
       raise DeviceBusyError.new(e)
     end
     
+    # Reads input from the MIDI device.
+    # 
+    # Returns:
+    # 
+    # an array of hashes with:
+    # 
+    # [<tt>:message</tt>]   an array of
+    #                       MIDI status code,
+    #                       MIDI data 1 (note),
+    #                       MIDI data 2 (velocity)
+    #                       and a fourth value
+    # [<tt>:timestamp</tt>] integer indicating the time when the MIDI message was created
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoInputAllowedError] when output is not enabled
     def input
       raise NoInputAllowedError if @input.nil?
       @input.read(16)
     end
     
-    def output(*args)
+    # Writes data to the MIDI device.
+    # 
+    # Parameters:
+    # 
+    # [+status+]  MIDI status code
+    # [+data1+]   MIDI data 1 (note)
+    # [+data2+]   MIDI data 2 (velocity)
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
+    def output(status, data1, data2)
       raise NoOutputAllowedError if @output.nil?
-      @output.write([{:message => args, :timestamp => 0}])
+      @output.write([{:message => [status, data1, data2], :timestamp => 0}])
       nil
     end
     
+    # Calculates the MIDI data 1 value (note) for a button.
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+type+] type of the button
+    # 
+    # Options hash:
+    # 
+    # [<tt>:x</tt>]     x coordinate
+    # [<tt>:y</tt>]     y coordinate
+    # 
+    # Returns:
+    # 
+    # integer to be used for MIDI data 1
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoValidGridCoordinatesError] when coordinates aren't within the valid range
     def note(type, opts)
       case type
       when :up      then ControlButton::UP
@@ -232,6 +379,21 @@ module Launchpad
       end
     end
     
+    # Calculates the MIDI data 2 value (velocity) for given brightness and mode values.
+    # 
+    # Options hash:
+    # 
+    # [<tt>:red</tt>]   brightness of red LED
+    # [<tt>:green</tt>] brightness of green LED
+    # [<tt>:mode</tt>]  button mode
+    # 
+    # Returns:
+    # 
+    # integer to be used for MIDI data 2
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoValidBrightnessError] when brightness values aren't within the valid range
     def velocity(opts)
       color = if opts.is_a?(Hash)
         red = brightness(opts[:red] || 0)
@@ -248,6 +410,15 @@ module Launchpad
       color + flags
     end
     
+    # Calculates the integer brightness for given brightness values.
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+brightness+] brightness
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoValidBrightnessError] when brightness values aren't within the valid range
     def brightness(brightness)
       case brightness
       when 0, :off            then 0

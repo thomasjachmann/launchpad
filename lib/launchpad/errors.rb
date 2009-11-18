@@ -1,31 +1,31 @@
 module Launchpad
   
-  # Generic launchpad error
+  # Generic launchpad error.
   class LaunchpadError < StandardError; end
   
-  # Error raised when the MIDI device specified doesn't exist
+  # Error raised when the MIDI device specified doesn't exist.
   class NoSuchDeviceError < LaunchpadError; end
   
-  # Error raised when the MIDI device specified is busy
+  # Error raised when the MIDI device specified is busy.
   class DeviceBusyError < LaunchpadError; end
   
   # Error raised when an input has been requested, although
-  # launchpad has been initialized without input
+  # launchpad has been initialized without input.
   class NoInputAllowedError < LaunchpadError; end
   
   # Error raised when an output has been requested, although
-  # launchpad has been initialized without output
+  # launchpad has been initialized without output.
   class NoOutputAllowedError < LaunchpadError; end
   
-  # Error raised when x/y coordinates outside of the grid
-  # or none at all were specified
+  # Error raised when <tt>x/y</tt> coordinates outside of the grid
+  # or none were specified.
   class NoValidGridCoordinatesError < LaunchpadError; end
   
-  # Error raised when wrong brightness was specified
+  # Error raised when wrong brightness was specified.
   class NoValidBrightnessError < LaunchpadError; end
   
   # Error raised when anything fails while communicating
-  # with the launchpad
+  # with the launchpad.
   class CommunicationError < LaunchpadError
     attr_accessor :source
     def initialize(e)
