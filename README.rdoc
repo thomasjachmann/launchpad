@@ -70,6 +70,19 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 * bitmap rendering
 
 
+== Changelog
+
+=== v0.1.1
+
+* ability to close device/interaction to free portmidi resources
+* ability to initialize devices using device ids as well as device names
+* complete documentation for http://rdoc.info/projects/thomasjachmann/launchpad
+
+=== v0.1.0
+
+* first feature complete version with kinda stable API
+
+
 == Copyright
 
 Copyright (c) 2009 Thomas Jachmann. See LICENSE for details.

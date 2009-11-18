@@ -13,6 +13,7 @@ begin
     gem.homepage = 'http://github.com/thomasjachmann/launchpad'
     gem.version = Launchpad::VERSION
     gem.authors = ['Thomas Jachmann']
+    gem.has_rdoc = true
     gem.add_dependency('portmidi')
     gem.add_development_dependency('thoughtbot-shoulda', '>= 0')
     gem.add_development_dependency('mocha')
