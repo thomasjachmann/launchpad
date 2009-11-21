@@ -44,6 +44,12 @@ module Launchpad
       TEST_LEDS     = 0x7C
     end
     
+    # Module defining MIDI data 2 codes for selecting the grid layout.
+    module GridLayout
+      XY            = 0x01
+      DRUM_RACK     = 0x02
+    end
+    
   end
   
 end

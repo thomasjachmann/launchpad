@@ -157,8 +157,9 @@ module Launchpad
       # ensure that colors is at least and most 80 elements long
       colors = colors.flatten[0..79]
       colors += [0] * (80 - colors.size) if colors.size < 80
-      # HACK switch off first grid LED to reset rapid LED change pointer
-      output(Status::ON, 0, 0)
+      # send normal MIDI message to reset rapid LED change pointer
+      # in this case, set mapping mode to x-y layout (the default)
+      output(Status::CC, Status::NIL, GridLayout::XY)
       # send colors in slices of 2
       messages = []
       colors.each_slice(2) do |c1, c2|

@@ -416,14 +416,14 @@ class TestDevice < Test::Unit::TestCase
         assert_nil @device.change_all([0])
       end
       
-      should 'fill colors with 0, set grid 0,0 to 0 and flush colors' do
-        expects_output(@device, 0x90, 0, 0)
+      should 'fill colors with 0, set grid layout to XY and flush colors' do
+        expects_output(@device, 0xB0, 0, 0x01)
         expects_output(@device, *([[0x92, 17, 17]] * 20 + [[0x92, 12, 12]] * 20))
         @device.change_all([5] * 40)
       end
       
-      should 'cut off exceeding colors, set grid 0,0 to 0 and flush colors' do
-        expects_output(@device, 0x90, 0, 0)
+      should 'cut off exceeding colors, set grid layout to XY and flush colors' do
+        expects_output(@device, 0xB0, 0, 0x01)
         expects_output(@device, *([[0x92, 17, 17]] * 40))
         @device.change_all([5] * 100)
       end
