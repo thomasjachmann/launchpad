@@ -34,7 +34,9 @@ class TestDevice < Test::Unit::TestCase
   }
   
   def expects_output(device, *args)
-    device.instance_variable_get('@output').expects(:write).with([{:message => args, :timestamp => 0}])
+    args = [args] unless args.first.is_a?(Array)
+    messages = args.collect {|data| {:message => data, :timestamp => 0}}
+    device.instance_variable_get('@output').expects(:write).with(messages)
   end
   
   def stub_input(device, *args)
@@ -416,14 +418,13 @@ class TestDevice < Test::Unit::TestCase
       
       should 'fill colors with 0, set grid 0,0 to 0 and flush colors' do
         expects_output(@device, 0x90, 0, 0)
-        20.times {|i| expects_output(@device, 0x92, 17, 17)}
-        20.times {|i| expects_output(@device, 0x92, 12, 12)}
+        expects_output(@device, *([[0x92, 17, 17]] * 20 + [[0x92, 12, 12]] * 20))
         @device.change_all([5] * 40)
       end
       
       should 'cut off exceeding colors, set grid 0,0 to 0 and flush colors' do
         expects_output(@device, 0x90, 0, 0)
-        40.times {|i| expects_output(@device, 0x92, 17, 17)}
+        expects_output(@device, *([[0x92, 17, 17]] * 40))
         @device.change_all([5] * 100)
       end
       

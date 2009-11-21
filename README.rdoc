@@ -72,6 +72,8 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Changelog
 
+* (at least) doubled the speed of change_all by not sending each message individually but sending them in one go (as an array)
+
 === v0.1.1
 
 * ability to close device/interaction to free portmidi resources

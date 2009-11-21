@@ -160,9 +160,11 @@ module Launchpad
       # HACK switch off first grid LED to reset rapid LED change pointer
       output(Status::ON, 0, 0)
       # send colors in slices of 2
+      messages = []
       colors.each_slice(2) do |c1, c2|
-        output(Status::MULTI, velocity(c1), velocity(c2))
+        messages << message(Status::MULTI, velocity(c1), velocity(c2))
       end
+      output_messages(messages)
     end
     
     # Switches LEDs marked as flashing on when using custom timer for flashing.
@@ -330,8 +332,22 @@ module Launchpad
     # 
     # [Launchpad::NoOutputAllowedError] when output is not enabled
     def output(status, data1, data2)
+      output_messages([message(status, data1, data2)])
+    end
+    
+    # Writes several messages to the MIDI device.
+    # 
+    # Parameters:
+    # 
+    # [+messages+]  an array of hashes (usually created with message) with:
+    #               [<tt>:message</tt>]   an array of
+    #                                     MIDI status code,
+    #                                     MIDI data 1 (note),
+    #                                     MIDI data 2 (velocity)
+    #               [<tt>:timestamp</tt>] integer indicating the time when the MIDI message was created
+    def output_messages(messages)
       raise NoOutputAllowedError if @output.nil?
-      @output.write([{:message => [status, data1, data2], :timestamp => 0}])
+      @output.write(messages)
       nil
     end
     
@@ -428,6 +444,27 @@ module Launchpad
       else
         raise NoValidBrightnessError.new("you need to specify the brightness as 0/1/2/3, :off/:low/:medium/:high or :off/:lo/:hi, you specified: #{brightness}")
       end
+    end
+    
+    # Creates a MIDI message.
+    # 
+    # Parameters:
+    # 
+    # [+status+]  MIDI status code
+    # [+data1+]   MIDI data 1 (note)
+    # [+data2+]   MIDI data 2 (velocity)
+    # 
+    # Returns:
+    # 
+    # an array with:
+    # 
+    # [<tt>:message</tt>]   an array of
+    #                       MIDI status code,
+    #                       MIDI data 1 (note),
+    #                       MIDI data 2 (velocity)
+    # [<tt>:timestamp</tt>] integer indicating the time when the MIDI message was created, in this case 0
+    def message(status, data1, data2)
+      {:message => [status, data1, data2], :timestamp => 0}
     end
     
   end
