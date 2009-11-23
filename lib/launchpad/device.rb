@@ -119,7 +119,10 @@ module Launchpad
     # [<tt>:y</tt>]     y coordinate
     # [<tt>:red</tt>]   brightness of red LED
     # [<tt>:green</tt>] brightness of green LED
-    # [<tt>:mode</tt>]  button mode
+    # [<tt>:mode</tt>]  button mode, defaults to <tt>:normal</tt>, one of:
+    #                   [<tt>:normal/tt>]     updates the LED for all circumstances (the new value will be written to both buffers)
+    #                   [<tt>:flashing/tt>]   updates the LED for flashing (the new value will be written to buffer 0 while the LED will be off in buffer 1, see buffering_mode)
+    #                   [<tt>:buffering/tt>]  updates the LED for the current update_buffer only
     # 
     # Errors raised:
     # 
@@ -174,7 +177,7 @@ module Launchpad
     # 
     # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_on
-      output(Status::CC, Status::NIL, Velocity::FLASHING_ON)
+      buffering_mode(:display_buffer => 0)
     end
     
     # Switches LEDs marked as flashing off when using custom timer for flashing.
@@ -183,7 +186,7 @@ module Launchpad
     # 
     # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_off
-      output(Status::CC, Status::NIL, Velocity::FLASHING_OFF)
+      buffering_mode(:display_buffer => 1)
     end
     
     # Starts flashing LEDs marked as flashing automatically.
@@ -193,21 +196,33 @@ module Launchpad
     # 
     # [Launchpad::NoOutputAllowedError] when output is not enabled
     def flashing_auto
-      output(Status::CC, Status::NIL, Velocity::FLASHING_AUTO)
+      buffering_mode(:flashing => true)
     end
     
-    #   def start_buffering
-    #     output(CC, 0x00, 0x31)
-    #     @buffering = true
-    #   end
-    #   
-    #   def flush_buffer(end_buffering = true)
-    #     output(CC, 0x00, 0x34)
-    #     if end_buffering
-    #       output(CC, 0x00, 0x30)
-    #       @buffering = false
-    #     end
-    #   end
+    # Controls the two buffers.
+    # 
+    # Optional options hash:
+    # 
+    # [<tt>:display_buffer</tt>]  which buffer to use for display, defaults to +0+
+    # [<tt>:update_buffer</tt>]   which buffer to use for updates when <tt>:mode</tt> is set to <tt>:buffering</tt>, defaults to +0+ (see change)
+    # [<tt>:copy</tt>]            whether to copy the LEDs states from the new display_buffer over to the new update_buffer, <tt>true/false</tt>, defaults to <tt>false</tt>
+    # [<tt>:flashing</tt>]        whether to start flashing by automatically switching between the two buffers for display, <tt>true/false</tt>, defaults to <tt>false</tt>
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoOutputAllowedError] when output is not enabled
+    def buffering_mode(opts = nil)
+      opts = {
+        :display_buffer => 0,
+        :update_buffer => 0,
+        :copy => false,
+        :flashing => false
+      }.merge(opts || {})
+      data = opts[:display_buffer] + 4 * opts[:update_buffer] + 32
+      data += 16 if opts[:copy]
+      data += 8 if opts[:flashing]
+      output(Status::CC, Status::NIL, data)
+    end
     
     # Reads user actions (button presses/releases) that haven't been handled yet.
     # 
@@ -402,7 +417,10 @@ module Launchpad
     # 
     # [<tt>:red</tt>]   brightness of red LED
     # [<tt>:green</tt>] brightness of green LED
-    # [<tt>:mode</tt>]  button mode
+    # [<tt>:mode</tt>]  button mode, defaults to <tt>:normal</tt>, one of:
+    #                   [<tt>:normal/tt>]     updates the LED for all circumstances (the new value will be written to both buffers)
+    #                   [<tt>:flashing/tt>]   updates the LED for flashing (the new value will be written to buffer 0 while in buffer 1, the value will be :off, see )
+    #                   [<tt>:buffering/tt>]  updates the LED for the current update_buffer only
     # 
     # Returns:
     # 

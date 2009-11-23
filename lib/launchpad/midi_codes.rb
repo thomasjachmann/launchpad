@@ -38,9 +38,6 @@ module Launchpad
     
     # Module defining MIDI data 2 (velocity) codes.
     module Velocity
-      FLASHING_ON   = 0x20
-      FLASHING_OFF  = 0x21
-      FLASHING_AUTO = 0x28
       TEST_LEDS     = 0x7C
     end
     

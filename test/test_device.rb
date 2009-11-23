@@ -432,6 +432,37 @@ class TestDevice < Test::Unit::TestCase
     
   end
   
+  context 'buffering_mode' do
+    
+    should 'raise NoOutputAllowedError when not initialized with output' do
+      assert_raise Launchpad::NoOutputAllowedError do
+        Launchpad::Device.new(:output => false).buffering_mode
+      end
+    end
+    
+    {
+      nil                     => [0xB0, 0x00, 0x20],
+      {}                      => [0xB0, 0x00, 0x20],
+      {:display_buffer => 1}  => [0xB0, 0x00, 0x21],
+      {:update_buffer => 1}   => [0xB0, 0x00, 0x24],
+      {:copy => true}         => [0xB0, 0x00, 0x30],
+      {:flashing => true}     => [0xB0, 0x00, 0x28],
+      {
+        :display_buffer => 1,
+        :update_buffer  => 1,
+        :copy           => true,
+        :flashing       => true
+      }                       => [0xB0, 0x00, 0x3D]
+    }.each do |opts, codes|
+      should "send #{codes.inspect} when called with #{opts.inspect}" do
+        d = Launchpad::Device.new
+        expects_output(d, *codes)
+        d.buffering_mode(opts)
+      end
+    end
+    
+  end
+  
   context 'read_pending_actions' do
     
     should 'raise NoInputAllowedError when not initialized with input' do
