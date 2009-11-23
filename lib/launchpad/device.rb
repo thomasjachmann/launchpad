@@ -145,7 +145,10 @@ module Launchpad
     #           * Hash:
     #             [<tt>:red</tt>]   brightness of red LED
     #             [<tt>:green</tt>] brightness of green LED
-    #             [<tt>:mode</tt>]  button mode
+    #             [<tt>:mode</tt>]  button mode, defaults to <tt>:normal</tt>, one of:
+    #                               [<tt>:normal/tt>]     updates the LEDs for all circumstances (the new value will be written to both buffers)
+    #                               [<tt>:flashing/tt>]   updates the LEDs for flashing (the new values will be written to buffer 0 while the LEDs will be off in buffer 1, see buffering_mode)
+    #                               [<tt>:buffering/tt>]  updates the LEDs for the current update_buffer only
     #           the array consists of 64 colors for the grid buttons,
     #           8 colors for the scene buttons (top to bottom)
     #           and 8 colors for the top control buttons (left to right),

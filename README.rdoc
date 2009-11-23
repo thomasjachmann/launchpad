@@ -67,6 +67,7 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 * interaction responses for presses on single grid buttons/button areas
 * bitmap rendering
+* internal tracking of LED states for both buffers
 
 
 == Changelog
