@@ -71,6 +71,8 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Changelog
 
+=== v.0.2.0
+
 * double buffering (see Launchpad::Device#buffering_mode)
 * don't update grid button 0,0 before change_all (in order to reset rapid update pointer), use MIDI message without visual effect
 * (at least) doubled the speed of change_all by not sending each message individually but sending them in one go (as an array)
