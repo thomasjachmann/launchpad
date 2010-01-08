@@ -1,9 +1,6 @@
 require File.join(File.dirname(__FILE__), 'setup')
 
-# need to declare as instance variables here for being able to access
-# @interaction within interactors created by create_interactor_block
-device = Launchpad::Device.new
-interaction = Launchpad::Interaction.new(:device => device)
+interaction = Launchpad::Interaction.new
 
 # build color arrays for color display views
 colors_single = [
