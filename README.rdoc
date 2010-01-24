@@ -72,6 +72,11 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Changelog
 
+=== v.0.2.1
+
+* Launchpad::Interaction#close now properly stops interaction first
+* multi threading: Launchpad::Interaction#start method can be called with :detached => true to allow calling thread to continue
+
 === v.0.2.0
 
 * double buffering (see Launchpad::Device#buffering_mode)
