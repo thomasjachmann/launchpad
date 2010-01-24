@@ -74,7 +74,7 @@ module Launchpad
     # Optional options hash:
     # 
     # [<tt>:detached</tt>]  <tt>true/false</tt>,
-    #                       whether to detach the interaction, method is blocking when +false+
+    #                       whether to detach the interaction, method is blocking when +false+,
     #                       optional, defaults to +false+
     # 
     # Errors raised:
