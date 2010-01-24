@@ -16,6 +16,11 @@ class TestInteraction < Test::Unit::TestCase
       assert_equal 'device', Launchpad::Interaction.new(:device_name => 'device').device
     end
     
+    should 'create device with given input_device_id/output_device_id' do
+      Launchpad::Device.expects(:new).with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true).returns('device')
+      assert_equal 'device', Launchpad::Interaction.new(:input_device_id => 'in', :output_device_id => 'out').device
+    end
+    
     should 'initialize device if given' do
       assert_equal 'device', Launchpad::Interaction.new(:device => 'device').device
     end
@@ -28,18 +33,17 @@ class TestInteraction < Test::Unit::TestCase
   
   context 'close' do
     
+    should 'not be active' do
+      interaction = Launchpad::Interaction.new
+      interaction.start(:detached => true)
+      interaction.close
+      assert !interaction.active
+    end
+    
     should 'close device' do
       interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
       device.expects(:close)
       interaction.close
-    end
-    
-    should 'craise NoInputAllowedError on subsequent accesses' do
-      interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
-      interaction.close
-      assert_raise Launchpad::NoInputAllowedError do
-        interaction.start
-      end
     end
     
   end
@@ -57,27 +61,45 @@ class TestInteraction < Test::Unit::TestCase
   
   context 'start' do
     
-    # this is kinda greybox tested, since I couldn't come up with another way to test a loop [thomas, 2009-11-11]
-    
     setup do
       @interaction = Launchpad::Interaction.new(:device => @device = Launchpad::Device.new)
     end
     
-    context 'up until read_pending_actions' do
-      
-      setup do
-        @device.stubs(:read_pending_actions).raises(BreakError)
+    teardown do
+      begin
+        @interaction.close
+      rescue
+        # ignore, should be handled in tests, this is just to close all the spawned threads
       end
-      
-      should 'set active to true' do
-        begin
-          @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
-          assert @interaction.active
-        end
-      end
-      
+    end
+    
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
+    should 'set active to true in blocking mode' do
+      t = Thread.new {}
+      Thread.expects(:new).returns(t)
+      @interaction.start
+      assert @interaction.active
+    end
+    
+    should 'set active to true in detached mode' do
+      @interaction.start(:detached => true)
+      assert @interaction.active
+    end
+    
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
+    should 'start a new thread and block in blocking mode' do
+      t = Thread.new {}
+      Thread.expects(:new).returns(t)
+      t.expects(:join)
+      @interaction.start
+    end
+    
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
+    should 'start a new thread and return in detached mode' do
+      t = Thread.new {}
+      Thread.expects(:new).returns(t)
+      t.expects(:join).never
+      @interaction.start(:detached => true)
     end
     
     should 'raise CommunicationError when Portmidi::DeviceError occurs' do
@@ -87,18 +109,16 @@ class TestInteraction < Test::Unit::TestCase
       end
     end
     
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     should 'call respond_to_action with actions from respond_to_action' do
-      begin
-        @interaction.stubs(:sleep).raises(BreakError)
-        @device.stubs(:read_pending_actions).returns(['message1', 'message2'])
-        @interaction.expects(:respond_to_action).with('message1').once
-        @interaction.expects(:respond_to_action).with('message2').once
-        @interaction.start
-        fail 'should raise BreakError'
-      rescue BreakError
-      end
+      @interaction.stubs(:sleep).raises(BreakError)
+      @device.stubs(:read_pending_actions).returns(['message1', 'message2'])
+      @interaction.expects(:respond_to_action).with('message1').once
+      @interaction.expects(:respond_to_action).with('message2').once
+      @interaction.start(:detached => true)
     end
     
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     context 'sleep' do
       
       setup do
@@ -106,50 +126,99 @@ class TestInteraction < Test::Unit::TestCase
       end
       
       should 'sleep with default latency of 0.001 when none given' do
-        begin
+        assert_raise BreakError do
           @interaction.expects(:sleep).with(0.001).raises(BreakError)
           @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
         end
       end
       
       should 'sleep with given latency' do
-        begin
+        assert_raise BreakError do
           @interaction = Launchpad::Interaction.new(:latency => 4, :device => @device)
           @interaction.expects(:sleep).with(4).raises(BreakError)
           @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
         end
       end
       
       should 'sleep with absolute value of given negative latency' do
-        begin
+        assert_raise BreakError do
           @interaction = Launchpad::Interaction.new(:latency => -3.1, :device => @device)
           @interaction.expects(:sleep).with(3.1).raises(BreakError)
           @interaction.start
-          fail 'should raise BreakError'
-        rescue BreakError
         end
       end
       
-      should 'not sleep when latency is <= 0' # TODO don't know how to test this [thomas, 2009-11-11]
+      should 'not sleep when latency is 0' do
+        @interaction = Launchpad::Interaction.new(:latency => 0, :device => @device)
+        @interaction.expects(:sleep).never
+        @interaction.start(:detached => true)
+      end
       
     end
     
-    should 'reset the device after the loop' # TODO don't know how to test this [thomas, 2009-11-11]
+    should 'reset the device after the loop' do
+      @interaction.device.expects(:reset)
+      @interaction.start(:detached => true)
+      @interaction.stop
+    end
+    
+    should 'raise NoOutputAllowedError on closed interaction' do
+      @interaction.close
+      assert_raise Launchpad::NoOutputAllowedError do
+        @interaction.start
+      end
+    end
     
   end
   
   context 'stop' do
     
-    should 'set active to false' do
+    should 'set active to false in blocking mode' do
       i = Launchpad::Interaction.new
-      i.instance_variable_set('@active', true)
+      Thread.new do
+        i.start
+      end
       assert i.active
       i.stop
       assert !i.active
+    end
+    
+    should 'set active to false in detached mode' do
+      i = Launchpad::Interaction.new
+      i.start(:detached => true)
+      assert i.active
+      i.stop
+      assert !i.active
+    end
+    
+    should 'be callable anytime' do
+      i = Launchpad::Interaction.new
+      i.stop
+      i.start(:detached => true)
+      i.stop
+      i.stop
+    end
+    
+    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
+    should 'call run and join on a running reader thread' do
+      t = Thread.new {sleep}
+      Thread.expects(:new).returns(t)
+      t.expects(:run)
+      t.expects(:join)
+      i = Launchpad::Interaction.new
+      i.start(:detached => true)
+      i.stop
+    end
+    
+    # this is kinda greybox tested, since I couldn't come up with another way to test tread handling [thomas, 2010-01-24]
+    should 'raise pending exceptions in detached mode' do
+      t = Thread.new {raise BreakError}
+      Thread.expects(:new).returns(t)
+      i = Launchpad::Interaction.new
+      i.start(:detached => true)
+      assert_raise BreakError do
+        i.stop
+      end
     end
     
   end

@@ -53,7 +53,13 @@ module Launchpad
     end
     
     # Closes the interaction's device - nothing can be done with the interaction/device afterwards.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoInputAllowedError] when input is not enabled on the interaction's device
+    # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the    
     def close
+      stop
       @device.close
     end
     
@@ -62,27 +68,55 @@ module Launchpad
       @device.closed?
     end
     
-    # Starts interacting with the launchpad, blocking. Resets the device when
-    # the interaction was properly stopped via stop.
+    # Starts interacting with the launchpad. Resets the device when
+    # the interaction was properly stopped via stop or close.
+    # 
+    # Optional options hash:
+    # 
+    # [<tt>:detached</tt>]  <tt>true/false</tt>,
+    #                       whether to detach the interaction, method is blocking when +false+
+    #                       optional, defaults to +false+
     # 
     # Errors raised:
     # 
     # [Launchpad::NoInputAllowedError] when input is not enabled on the interaction's device
+    # [Launchpad::NoOutputAllowedError] when output is not enabled on the interaction's device
     # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the launchpad
-    def start
+    def start(opts = nil)
+      opts = {
+        :detached => false
+      }.merge(opts || {})
       @active = true
-      while @active do
-        @device.read_pending_actions.each {|action| respond_to_action(action)}
-        sleep @latency unless @latency <= 0
+      @reader_thread ||= Thread.new do
+        begin
+          while @active do
+            @device.read_pending_actions.each {|action| respond_to_action(action)}
+            sleep @latency unless @latency <= 0
+          end
+        rescue Portmidi::DeviceError => e
+          raise CommunicationError.new(e)
+        ensure
+          @device.reset
+        end
       end
-      @device.reset
-    rescue Portmidi::DeviceError => e
-      raise CommunicationError.new(e)
+      @reader_thread.join unless opts[:detached]
     end
     
-    # Stops interacting with the launchpad and resets it.
+    # Stops interacting with the launchpad.
+    # 
+    # Errors raised:
+    # 
+    # [Launchpad::NoInputAllowedError] when input is not enabled on the interaction's device
+    # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the    
     def stop
       @active = false
+      if @reader_thread
+        # run (resume from sleep) and wait for @reader_thread to end
+        @reader_thread.run if @reader_thread.alive?
+        @reader_thread.join
+        @reader_thread = nil
+      end
+      nil
     end
     
     # Registers a response to one or more actions.
