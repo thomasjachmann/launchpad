@@ -1,4 +1,3 @@
-require 'launchpad/device'
 require 'launchpad/interaction'
 
 # All the fun of launchpad in one module!
