@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{launchpad}
-  s.version = "0.2.1"
+  s.version = "0.2.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Thomas Jachmann"]
-  s.date = %q{2010-01-24}
+  s.date = %q{2010-02-24}
   s.description = %q{This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad's MIDI input/output.}
   s.email = %q{tom.j@gmx.net}
   s.extra_rdoc_files = [
