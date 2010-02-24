@@ -72,6 +72,8 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Changelog
 
+* single threading fix: prevent ThreadError when Launchpad::Interaction#stop is called within an action response
+
 === v.0.2.1
 
 * Launchpad::Interaction#close now properly stops interaction first

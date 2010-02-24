@@ -90,7 +90,7 @@ module Launchpad
       @reader_thread ||= Thread.new do
         begin
           while @active do
-            @device.read_pending_actions.each {|action| respond_to_action(action)}
+            @device.read_pending_actions.each {|action| Thread.new {respond_to_action(action)}}
             sleep @latency unless @latency <= 0
           end
         rescue Portmidi::DeviceError => e

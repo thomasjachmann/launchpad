@@ -278,4 +278,25 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
+  context 'regression tests' do
+    
+    should 'not raise an exception when calling stop within a response in attached mode' do
+      i = Launchpad::Interaction.new
+      # strangely, you have to sleep 0.001 or do anything else before
+      # calling i.stop - the ThreadError won't be thrown otherwise...
+      i.response_to(:mixer, :down) {|i,a| sleep 0.001; i.stop}
+      i.device.stubs(:read_pending_actions).returns([{
+        :timestamp  => 0,
+        :state      => :down,
+        :type       => :mixer
+      }])
+      assert_nothing_raised do
+        Thread.new do
+          i.start
+        end.join
+      end
+    end
+    
+  end
+  
 end
