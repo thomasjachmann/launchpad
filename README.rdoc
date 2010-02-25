@@ -1,5 +1,11 @@
 = launchpad
 
+First off, if you don't know what launchpad is, visit:
+
+* Novation's site at http://de.novationmusic.com/products/midi_controller/launchpad
+* my demo videos for this library at http://www.youtube.com/thomasjachmann
+* other demos on youtube http://www.youtube.com/results?search_query=novation+launchpad
+
 This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
 
 The interfaces should be rather stable now (sorry, I changed quite a bit since the last release), so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
