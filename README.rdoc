@@ -17,7 +17,7 @@ If you don't know what launchpad is, visit:
 
 If you're into other languages or want to know what goes on behind the scenes MIDI wise, have a look at:
 
-* Novation's programmers reference describing the MIDI messages to exchange with launchpad at http://www.novationmusic.com/support/launchpad/ (bottom of the page)
+* Novation's MIDI reference at http://www.novationmusic.com/support/launchpad (bottom of the page)
 * Tobi Tobes' port of my gem to processing at http://github.com/rngtng/launchpad
 
 
