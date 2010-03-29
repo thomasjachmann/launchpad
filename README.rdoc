@@ -1,16 +1,24 @@
 = launchpad
 
-First off, if you don't know what launchpad is, visit:
+This gem provides a ruby interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
+
+The interfaces should be rather stable now (sorry, I changed quite a bit since the last release), so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
+
+Sometimes, the launchpad won't react to anything or react to/light up the wrong LEDs. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
+
+
+== More Info
+
+If you don't know what launchpad is, visit:
 
 * Novation's site at http://de.novationmusic.com/products/midi_controller/launchpad
 * my demo videos for this library at http://www.youtube.com/thomasjachmann
 * other demos on youtube http://www.youtube.com/results?search_query=novation+launchpad
 
-This gem provides an interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
+If you're into other languages or want to know what goes on behind the scenes MIDI wise, have a look at:
 
-The interfaces should be rather stable now (sorry, I changed quite a bit since the last release), so experiment with them and comment on their usability. This still is work in progress. If you need anything or think the interfaces could be improved in any way, please contact me.
-
-Sometimes, the launchpad won't react to anything or react to/light up the wrong LEDs. Don't despair, just dis- and reconnect the thing. It seems that some (unexpected) MIDI signals make it hickup.
+* Novation's programmers reference describing the MIDI messages to exchange with launchpad at http://www.novationmusic.com/support/launchpad/ (bottom of the page)
+* Tobi Tobes' port of my gem to processing at http://github.com/rngtng/launchpad
 
 
 == Requirements
