@@ -5,7 +5,7 @@ require 'mocha'
 
 begin
   require 'redgreen' if ENV['TM_FILENAME'].nil?
-rescue MissingSourceFile
+rescue LoadError
   # ignore - just for colorization
 end
 

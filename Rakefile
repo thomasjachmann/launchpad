@@ -15,7 +15,7 @@ begin
     gem.authors = ['Thomas Jachmann']
     gem.has_rdoc = true
     gem.add_dependency('portmidi', '>= 0.0.6')
-    gem.add_development_dependency('thoughtbot-shoulda', '>= 0')
+    gem.add_development_dependency('shoulda', '>= 0')
     gem.add_development_dependency('mocha')
     # gem is a Gem::Specification... see http://www.rubygems.org/read/chapter/20 for additional settings
   end
