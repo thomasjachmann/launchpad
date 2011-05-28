@@ -9,7 +9,7 @@ begin
     gem.name = 'launchpad'
     gem.summary = 'A gem for accessing novation\'s launchpad programmatically and easily.'
     gem.description = 'This gem provides an interface to access novation\'s launchpad programmatically. LEDs can be lighted and button presses can be evaluated using launchpad\'s MIDI input/output.'
-    gem.email = 'tom.j@gmx.net'
+    gem.email = 'self@thomasjachmann.com'
     gem.homepage = 'http://github.com/thomasjachmann/launchpad'
     gem.version = Launchpad::VERSION
     gem.authors = ['Thomas Jachmann']
