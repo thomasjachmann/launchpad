@@ -90,7 +90,7 @@ class TestInteraction < Test::Unit::TestCase
     should 'start a new thread and block in blocking mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
-      t.expects(:join)
+      t.expects(:join).twice # once from start, once from test's teardown
       @interaction.start
     end
     
@@ -98,7 +98,7 @@ class TestInteraction < Test::Unit::TestCase
     should 'start a new thread and return in detached mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
-      t.expects(:join).never
+      t.expects(:join).once # once from test's teardown
       @interaction.start(:detached => true)
     end
     

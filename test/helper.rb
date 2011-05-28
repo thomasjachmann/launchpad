@@ -1,16 +1,11 @@
 require 'rubygems'
+require 'bundler/setup'
+
 require 'test/unit'
 require 'shoulda'
 require 'mocha'
+require 'redgreen' if ENV['TM_FILENAME'].nil?
 
-begin
-  require 'redgreen' if ENV['TM_FILENAME'].nil?
-rescue LoadError
-  # ignore - just for colorization
-end
-
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-$LOAD_PATH.unshift(File.dirname(__FILE__))
 require 'launchpad'
 
 class Test::Unit::TestCase
