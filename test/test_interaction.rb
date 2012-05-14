@@ -175,12 +175,16 @@ class TestInteraction < Test::Unit::TestCase
     
     should 'set active to false in blocking mode' do
       i = Launchpad::Interaction.new
-      Thread.new do
-        i.start
+      begin
+        t = Thread.new do
+          i.start
+        end
+        assert i.active
+        i.stop
+        assert !i.active
+      ensure
+        t.join
       end
-      assert i.active
-      i.stop
-      assert !i.active
     end
     
     should 'set active to false in detached mode' do
