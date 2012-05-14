@@ -15,6 +15,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "portmidi", ">= 0.0.6"
   s.add_dependency "ffi"
+  s.add_development_dependency "rake"
   s.add_development_dependency "shoulda"
   s.add_development_dependency "mocha"
   s.add_development_dependency "redgreen"
