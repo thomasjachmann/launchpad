@@ -66,6 +66,7 @@ describe Launchpad::Interaction do
     end
     
     after do
+      mocha_teardown # so that expectations on Thread.join don't fail in here
       begin
         @interaction.close
       rescue
@@ -90,7 +91,7 @@ describe Launchpad::Interaction do
     it 'starts a new thread and block in blocking mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
-      t.expects(:join).twice # once from start, once from test's teardown
+      t.expects(:join).once
       @interaction.start
     end
     
@@ -98,7 +99,7 @@ describe Launchpad::Interaction do
     it 'starts a new thread and return in detached mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
-      t.expects(:join).once # once from test's teardown
+      t.expects(:join).never
       @interaction.start(:detached => true)
     end
     
