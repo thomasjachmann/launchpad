@@ -1,8 +1,34 @@
 require 'helper'
+require 'timeout'
 
 class BreakError < StandardError; end
 
 describe Launchpad::Interaction do
+
+  # returns true/false whether the operation ended or the timeout was hit
+  def timeout(&block)
+    Timeout.timeout(0.02, &block)
+    true
+  rescue Timeout::Error
+    false
+  end
+
+  # starts the given interaction in blocking mode, but doesn't block
+  # returns true/false whether the interaction could be started within 0.02 sec
+  def start_blocking(interaction)
+    c = Thread.current
+    t = Thread.new do
+      begin
+        interaction.start
+      rescue Exception => e
+        # reraise on the main thread
+        c.raise e
+      end
+    end
+    timeout do
+      while !interaction.active; end # loop until interaction is active
+    end
+  end
 
   describe '#initialize' do
     
@@ -76,10 +102,8 @@ describe Launchpad::Interaction do
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     it 'sets active to true in blocking mode' do
-      t = Thread.new {}
-      Thread.expects(:new).returns(t)
-      @interaction.start
-      assert @interaction.active
+      refute @interaction.active
+      assert start_blocking(@interaction)
     end
     
     it 'sets active to true in detached mode' do
@@ -112,11 +136,27 @@ describe Launchpad::Interaction do
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     it 'calls respond_to_action with actions from respond_to_action' do
-      @interaction.stubs(:sleep).raises(BreakError)
-      @device.stubs(:read_pending_actions).returns(['message1', 'message2'])
-      @interaction.expects(:respond_to_action).with('message1').once
-      @interaction.expects(:respond_to_action).with('message2').once
-      @interaction.start(:detached => true)
+      @interaction.response_to(:mixer, :down) { @mixer_down = true }
+      # strangely, you have to sleep 0.001 or do anything else before
+      # calling i.stop - the ThreadError won't be thrown otherwise...
+      @interaction.response_to(:mixer, :up) {|i,a| sleep 0.001; i.stop}
+      @device.stubs(:read_pending_actions).returns([
+        {
+          :timestamp  => 0,
+          :state      => :down,
+          :type       => :mixer
+        },
+        {
+          :timestamp  => 0,
+          :state      => :up,
+          :type       => :mixer
+        }
+      ])
+      erg = timeout do
+        @interaction.start
+        assert @mixer_down
+      end
+      assert erg, "the actions weren't called"
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
@@ -152,7 +192,7 @@ describe Launchpad::Interaction do
       it 'does not sleep when latency is 0' do
         @interaction = Launchpad::Interaction.new(:latency => 0, :device => @device)
         @interaction.expects(:sleep).never
-        @interaction.start(:detached => true)
+        timeout { @interaction.start }
       end
       
     end
@@ -176,16 +216,9 @@ describe Launchpad::Interaction do
     
     it 'sets active to false in blocking mode' do
       i = Launchpad::Interaction.new
-      begin
-        t = Thread.new do
-          i.start
-        end
-        assert i.active
-        i.stop
-        assert !i.active
-      ensure
-        t.join
-      end
+      assert start_blocking(i)
+      i.stop
+      assert !i.active
     end
     
     it 'sets active to false in detached mode' do
@@ -289,15 +322,15 @@ describe Launchpad::Interaction do
       i = Launchpad::Interaction.new
       # strangely, you have to sleep 0.001 or do anything else before
       # calling i.stop - the ThreadError won't be thrown otherwise...
-      i.response_to(:mixer, :down) {|i,a| sleep 0.001; i.stop}
+      i.response_to(:mixer, :down) {|i,a| sleep 0.001, i.stop}
       i.device.stubs(:read_pending_actions).returns([{
         :timestamp  => 0,
         :state      => :down,
         :type       => :mixer
       }])
-      Thread.new do
-        i.start
-      end.join
+      Thread.new { i.start }.join
+      # erg = timeout { i.start }
+      # assert erg, "the actions weren't called"
     end
     
   end
