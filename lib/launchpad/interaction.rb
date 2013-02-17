@@ -87,9 +87,11 @@ module Launchpad
         :detached => false
       }.merge(opts || {})
       @active = true
+      # TODO rescue and reraise reader exceptions onto the main thread
       @reader_thread ||= Thread.new do
         begin
           while @active do
+            # TODO rescue and reraise action exceptions onto the main thread
             @device.read_pending_actions.each {|action| Thread.new {respond_to_action(action)}}
             sleep @latency unless @latency <= 0
           end
