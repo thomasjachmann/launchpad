@@ -1,15 +1,16 @@
-require 'rubygems'
-require 'bundler/setup'
+require 'minitest/spec'
+require 'minitest/autorun'
 
-require 'test/unit'
-require 'shoulda'
-require 'mocha'
-require 'redgreen' if ENV['TM_FILENAME'].nil?
+begin
+  require 'minitest/reporters'
+  MiniTest::Reporters.use!
+rescue LoadError
+  # ignore when it's not there - must be ruby 1.8
+end
+
+require 'mocha/setup'
 
 require 'launchpad'
-
-class Test::Unit::TestCase
-end
 
 # mock Portmidi for tests
 module Portmidi

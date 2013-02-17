@@ -2,45 +2,45 @@ require 'helper'
 
 class BreakError < StandardError; end
 
-class TestInteraction < Test::Unit::TestCase
-  
-  context 'initializer' do
+describe Launchpad::Interaction do
+
+  describe '#initialize' do
     
-    should 'create device if not given' do
+    it 'creates device if not given' do
       Launchpad::Device.expects(:new).with(:input => true, :output => true).returns('device')
       assert_equal 'device', Launchpad::Interaction.new.device
     end
     
-    should 'create device with given device_name' do
+    it 'creates device with given device_name' do
       Launchpad::Device.expects(:new).with(:device_name => 'device', :input => true, :output => true).returns('device')
       assert_equal 'device', Launchpad::Interaction.new(:device_name => 'device').device
     end
     
-    should 'create device with given input_device_id/output_device_id' do
+    it 'creates device with given input_device_id/output_device_id' do
       Launchpad::Device.expects(:new).with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true).returns('device')
       assert_equal 'device', Launchpad::Interaction.new(:input_device_id => 'in', :output_device_id => 'out').device
     end
     
-    should 'initialize device if given' do
+    it 'initializes device if given' do
       assert_equal 'device', Launchpad::Interaction.new(:device => 'device').device
     end
     
-    should 'not be active' do
+    it 'is not be active' do
       assert !Launchpad::Interaction.new.active
     end
     
   end
   
-  context 'close' do
+  describe '#close' do
     
-    should 'not be active' do
+    it 'is not be active' do
       interaction = Launchpad::Interaction.new
       interaction.start(:detached => true)
       interaction.close
       assert !interaction.active
     end
     
-    should 'close device' do
+    it 'closes device' do
       interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
       device.expects(:close)
       interaction.close
@@ -48,9 +48,9 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
-  context 'closed?' do
+  describe '#closed?' do
     
-    should 'return false on a newly created interaction, but true after closing' do
+    it 'returns false on a newly created interaction, but true after closing' do
       interaction = Launchpad::Interaction.new
       assert !interaction.closed?
       interaction.close
@@ -59,13 +59,13 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
-  context 'start' do
+  describe '#start' do
     
-    setup do
+    before do
       @interaction = Launchpad::Interaction.new(:device => @device = Launchpad::Device.new)
     end
     
-    teardown do
+    after do
       begin
         @interaction.close
       rescue
@@ -74,20 +74,20 @@ class TestInteraction < Test::Unit::TestCase
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    should 'set active to true in blocking mode' do
+    it 'sets active to true in blocking mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
       @interaction.start
       assert @interaction.active
     end
     
-    should 'set active to true in detached mode' do
+    it 'sets active to true in detached mode' do
       @interaction.start(:detached => true)
       assert @interaction.active
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    should 'start a new thread and block in blocking mode' do
+    it 'starts a new thread and block in blocking mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
       t.expects(:join).twice # once from start, once from test's teardown
@@ -95,22 +95,22 @@ class TestInteraction < Test::Unit::TestCase
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    should 'start a new thread and return in detached mode' do
+    it 'starts a new thread and return in detached mode' do
       t = Thread.new {}
       Thread.expects(:new).returns(t)
       t.expects(:join).once # once from test's teardown
       @interaction.start(:detached => true)
     end
     
-    should 'raise CommunicationError when Portmidi::DeviceError occurs' do
+    it 'raises CommunicationError when Portmidi::DeviceError occurs' do
       @device.stubs(:read_pending_actions).raises(Portmidi::DeviceError.new(0))
-      assert_raise Launchpad::CommunicationError do
+      assert_raises Launchpad::CommunicationError do
         @interaction.start
       end
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    should 'call respond_to_action with actions from respond_to_action' do
+    it 'calls respond_to_action with actions from respond_to_action' do
       @interaction.stubs(:sleep).raises(BreakError)
       @device.stubs(:read_pending_actions).returns(['message1', 'message2'])
       @interaction.expects(:respond_to_action).with('message1').once
@@ -119,36 +119,36 @@ class TestInteraction < Test::Unit::TestCase
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    context 'sleep' do
+    describe 'latency' do
       
-      setup do
+      before do
         @device.stubs(:read_pending_actions).returns([])
       end
       
-      should 'sleep with default latency of 0.001 when none given' do
-        assert_raise BreakError do
+      it 'sleeps with default latency of 0.001 when none given' do
+        assert_raises BreakError do
           @interaction.expects(:sleep).with(0.001).raises(BreakError)
           @interaction.start
         end
       end
       
-      should 'sleep with given latency' do
-        assert_raise BreakError do
+      it 'sleeps with given latency' do
+        assert_raises BreakError do
           @interaction = Launchpad::Interaction.new(:latency => 4, :device => @device)
           @interaction.expects(:sleep).with(4).raises(BreakError)
           @interaction.start
         end
       end
       
-      should 'sleep with absolute value of given negative latency' do
-        assert_raise BreakError do
+      it 'sleeps with absolute value of given negative latency' do
+        assert_raises BreakError do
           @interaction = Launchpad::Interaction.new(:latency => -3.1, :device => @device)
           @interaction.expects(:sleep).with(3.1).raises(BreakError)
           @interaction.start
         end
       end
       
-      should 'not sleep when latency is 0' do
+      it 'does not sleep when latency is 0' do
         @interaction = Launchpad::Interaction.new(:latency => 0, :device => @device)
         @interaction.expects(:sleep).never
         @interaction.start(:detached => true)
@@ -156,24 +156,24 @@ class TestInteraction < Test::Unit::TestCase
       
     end
     
-    should 'reset the device after the loop' do
+    it 'resets the device after the loop' do
       @interaction.device.expects(:reset)
       @interaction.start(:detached => true)
       @interaction.stop
     end
     
-    should 'raise NoOutputAllowedError on closed interaction' do
+    it 'raises NoOutputAllowedError on closed interaction' do
       @interaction.close
-      assert_raise Launchpad::NoOutputAllowedError do
+      assert_raises Launchpad::NoOutputAllowedError do
         @interaction.start
       end
     end
     
   end
   
-  context 'stop' do
+  describe '#stop' do
     
-    should 'set active to false in blocking mode' do
+    it 'sets active to false in blocking mode' do
       i = Launchpad::Interaction.new
       begin
         t = Thread.new do
@@ -187,7 +187,7 @@ class TestInteraction < Test::Unit::TestCase
       end
     end
     
-    should 'set active to false in detached mode' do
+    it 'sets active to false in detached mode' do
       i = Launchpad::Interaction.new
       i.start(:detached => true)
       assert i.active
@@ -195,7 +195,7 @@ class TestInteraction < Test::Unit::TestCase
       assert !i.active
     end
     
-    should 'be callable anytime' do
+    it 'is callable anytime' do
       i = Launchpad::Interaction.new
       i.stop
       i.start(:detached => true)
@@ -204,7 +204,7 @@ class TestInteraction < Test::Unit::TestCase
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    should 'call run and join on a running reader thread' do
+    it 'calls run and joins on a running reader thread' do
       t = Thread.new {sleep}
       Thread.expects(:new).returns(t)
       t.expects(:run)
@@ -215,25 +215,25 @@ class TestInteraction < Test::Unit::TestCase
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test tread handling [thomas, 2010-01-24]
-    should 'raise pending exceptions in detached mode' do
+    it 'raises pending exceptions in detached mode' do
       t = Thread.new {raise BreakError}
       Thread.expects(:new).returns(t)
       i = Launchpad::Interaction.new
       i.start(:detached => true)
-      assert_raise BreakError do
+      assert_raises BreakError do
         i.stop
       end
     end
     
   end
   
-  context 'response_to/no_response_to/respond_to' do
+  describe '#response_to/#no_response_to/#respond_to' do
     
-    setup do
+    before do
       @interaction = Launchpad::Interaction.new
     end
     
-    should 'call responses that match, and not others' do
+    it 'calls all responses that match, and not others' do
       @interaction.response_to(:mixer, :down) {|i, a| @mixer_down = true}
       @interaction.response_to(:all, :down) {|i, a| @all_down = true}
       @interaction.response_to(:all, :up) {|i, a| @all_up = true}
@@ -245,7 +245,7 @@ class TestInteraction < Test::Unit::TestCase
       assert !@grid_down
     end
     
-    should 'not call responses when they are deregistered' do
+    it 'does not call responses when they are deregistered' do
       @interaction.response_to(:mixer, :down) {|i, a| @mixer_down = true}
       @interaction.response_to(:mixer, :up) {|i, a| @mixer_up = true}
       @interaction.response_to(:all, :both) {|i, a| @all_down = a[:state] == :down}
@@ -260,7 +260,7 @@ class TestInteraction < Test::Unit::TestCase
       assert !@all_down
     end
     
-    should 'not call responses registered for both when removing for one of both states' do
+    it 'does not call responses registered for both when removing for one of both states' do
       @interaction.response_to(:mixer, :both) {|i, a| @mixer = true}
       @interaction.no_response_to(:mixer, :down)
       @interaction.respond_to(:mixer, :down)
@@ -269,7 +269,7 @@ class TestInteraction < Test::Unit::TestCase
       assert @mixer
     end
     
-    should 'remove other responses when adding a new exclusive response' do
+    it 'removes other responses when adding a new exclusive response' do
       @interaction.response_to(:mixer, :both) {|i, a| @mixer = true}
       @interaction.response_to(:mixer, :down, :exclusive => true) {|i, a| @exclusive_mixer = true}
       @interaction.respond_to(:mixer, :down)
@@ -282,9 +282,9 @@ class TestInteraction < Test::Unit::TestCase
     
   end
   
-  context 'regression tests' do
+  describe 'regression tests' do
     
-    should 'not raise an exception when calling stop within a response in attached mode' do
+    it 'does not raise an exception when calling stop within a response in attached mode' do
       i = Launchpad::Interaction.new
       # strangely, you have to sleep 0.001 or do anything else before
       # calling i.stop - the ThreadError won't be thrown otherwise...
@@ -294,11 +294,9 @@ class TestInteraction < Test::Unit::TestCase
         :state      => :down,
         :type       => :mixer
       }])
-      assert_nothing_raised do
-        Thread.new do
-          i.start
-        end.join
-      end
+      Thread.new do
+        i.start
+      end.join
     end
     
   end
