@@ -1,7 +1,6 @@
-require File.join(File.dirname(__FILE__), 'setup')
+require File.expand_path('../setup', __FILE__)
 
 device = Launchpad::Device.new
-device.reset
 
 on = { :red => :high, :green => :off }
 off = { :red => :off, :green => :lo }
