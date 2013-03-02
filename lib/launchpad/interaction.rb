@@ -50,7 +50,10 @@ module Launchpad
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def initialize(opts = nil)
       opts ||= {}
+
       self.logger = opts[:logger]
+      logger.debug "initializing Launchpad::Interaction##{object_id} with #{opts.inspect}"
+
       @device = opts[:device]
       @device ||= Device.new(opts.merge(
         :input => true,
@@ -76,6 +79,7 @@ module Launchpad
     # [Launchpad::NoInputAllowedError] when input is not enabled on the interaction's device
     # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the    
     def close
+      logger.debug "closing Launchpad::Interaction##{object_id}"
       stop
       @device.close
     end
@@ -100,6 +104,7 @@ module Launchpad
     # [Launchpad::NoOutputAllowedError] when output is not enabled on the interaction's device
     # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the launchpad
     def start(opts = nil)
+      logger.debug "starting Launchpad::Interaction##{object_id}"
       opts = {
         :detached => false
       }.merge(opts || {})
@@ -128,6 +133,7 @@ module Launchpad
     # [Launchpad::NoInputAllowedError] when input is not enabled on the interaction's device
     # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the    
     def stop
+      logger.debug "stopping Launchpad::Interaction##{object_id}"
       @active = false
       if @reader_thread
         # run (resume from sleep) and wait for @reader_thread to end
@@ -160,6 +166,7 @@ module Launchpad
     # [+interaction+] the interaction object that received the action
     # [+action+]      the action received from Launchpad::Device.read_pending_actions
     def response_to(types = :all, state = :both, opts = nil, &block)
+      logger.debug "setting response to #{types.inspect} for state #{state.inspect} with #{opts.inspect}"
       types = Array(types)
       opts ||= {}
       no_response_to(types, state) if opts[:exclusive] == true
@@ -180,6 +187,7 @@ module Launchpad
     # [+state+] button state to respond to,
     #           additional value <tt>:both</tt>
     def no_response_to(types = nil, state = :both)
+      logger.debug "removing response to #{types.inspect} for state #{state.inspect}"
       types = Array(types)
       Array(state == :both ? %w(down up) : state).each do |state|
         types.each {|type| responses[type.to_sym][state.to_sym].clear}

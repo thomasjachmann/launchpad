@@ -53,6 +53,7 @@ module Launchpad
       }.merge(opts || {})
       
       self.logger = opts[:logger]
+      logger.debug "initializing Launchpad::Device##{object_id} with #{opts.inspect}"
 
       Portmidi.start
       
@@ -63,6 +64,7 @@ module Launchpad
     
     # Closes the device - nothing can be done with the device afterwards.
     def close
+      logger.debug "closing Launchpad::Device##{object_id}"
       @input.close unless @input.nil?
       @input = nil
       @output.close unless @output.nil?
@@ -310,15 +312,21 @@ module Launchpad
     # [Launchpad::NoSuchDeviceError] when device with ID or name specified does not exist
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def device(devices, device_type, opts)
+      logger.debug "creating #{device_type} with #{opts.inspect}, choosing from portmidi devices #{devices.inspect}"
       id = opts[:id]
       if id.nil?
         name = opts[:name] || 'Launchpad'
         device = devices.select {|device| device.name == name}.first
         id = device.device_id unless device.nil?
       end
-      raise NoSuchDeviceError.new("MIDI device #{opts[:id] || opts[:name]} doesn't exist") if id.nil?
+      if id.nil?
+        message = "MIDI device #{opts[:id] || opts[:name]} doesn't exist"
+        logger.fatal message
+        raise NoSuchDeviceError.new(message)
+      end
       device_type.new(id)
     rescue RuntimeError => e
+      logger.fatal "error creating #{device_type}: #{e.inspect}"
       raise DeviceBusyError.new(e)
     end
     
@@ -339,7 +347,10 @@ module Launchpad
     # 
     # [Launchpad::NoInputAllowedError] when output is not enabled
     def input
-      raise NoInputAllowedError if @input.nil?
+      if @input.nil?
+        logger.error "trying to read from device that's not been initialized for input"
+        raise NoInputAllowedError
+      end
       @input.read(16)
     end
     
@@ -369,7 +380,11 @@ module Launchpad
     #                                     MIDI data 2 (velocity)
     #               [<tt>:timestamp</tt>] integer indicating the time when the MIDI message was created
     def output_messages(messages)
-      raise NoOutputAllowedError if @output.nil?
+      if @output.nil?
+        logger.error "trying to write to device that's not been initialized for output"
+        raise NoOutputAllowedError
+      end
+      logger.debug "writing messages to launchpad:\n  #{messages.join("\n  ")}" if logger.debug?
       @output.write(messages)
       nil
     end
@@ -413,7 +428,10 @@ module Launchpad
       else
         x = (opts[:x] || -1).to_i
         y = (opts[:y] || -1).to_i
-        raise NoValidGridCoordinatesError.new("you need to specify valid coordinates (x/y, 0-7, from top left), you specified: x=#{x}, y=#{y}") if x < 0 || x > 7 || y < 0 || y > 7
+        if x < 0 || x > 7 || y < 0 || y > 7
+          logger.error "wrong coordinates specified: x=#{x}, y=#{y}"
+          raise NoValidGridCoordinatesError.new("you need to specify valid coordinates (x/y, 0-7, from top left), you specified: x=#{x}, y=#{y}")
+        end
         y * 16 + x
       end
     end
@@ -468,6 +486,7 @@ module Launchpad
       when 2, :medium,  :med  then 2
       when 3, :high,    :hi   then 3
       else
+        logger.error "wrong brightness specified: #{brightness}"
         raise NoValidBrightnessError.new("you need to specify the brightness as 0/1/2/3, :off/:low/:medium/:high or :off/:lo/:hi, you specified: #{brightness}")
       end
     end
