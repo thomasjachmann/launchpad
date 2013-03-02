@@ -5,5 +5,3 @@ rvm:
 before_install:
   - sudo apt-get update
   - sudo apt-get install libportmidi-dev
-notifications:
-  email: false
