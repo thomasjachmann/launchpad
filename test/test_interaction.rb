@@ -33,25 +33,57 @@ describe Launchpad::Interaction do
   describe '#initialize' do
     
     it 'creates device if not given' do
-      Launchpad::Device.expects(:new).with(:input => true, :output => true).returns('device')
-      assert_equal 'device', Launchpad::Interaction.new.device
+      device = Launchpad::Device.new
+      Launchpad::Device.expects(:new).
+        with(:input => true, :output => true).
+        returns(device)
+      interaction = Launchpad::Interaction.new
+      assert_same device, interaction.device
     end
     
     it 'creates device with given device_name' do
-      Launchpad::Device.expects(:new).with(:device_name => 'device', :input => true, :output => true).returns('device')
-      assert_equal 'device', Launchpad::Interaction.new(:device_name => 'device').device
+      device = Launchpad::Device.new
+      Launchpad::Device.expects(:new).
+        with(:device_name => 'device', :input => true, :output => true).
+        returns(device)
+      interaction = Launchpad::Interaction.new(:device_name => 'device')
+      assert_same device, interaction.device
+    end
+    
+    it 'creates device with given input_device_id' do
+      device = Launchpad::Device.new
+      Launchpad::Device.expects(:new).
+        with(:input_device_id => 'in', :input => true, :output => false).
+        returns(device)
+      interaction = Launchpad::Interaction.new(:input_device_id => 'in')
+      assert_same device, interaction.device
+    end
+    
+    it 'creates device with given output_device_id' do
+      device = Launchpad::Device.new
+      Launchpad::Device.expects(:new).
+        with(:output_device_id => 'out', :input => false, :output => true).
+        returns(device)
+      interaction = Launchpad::Interaction.new(:output_device_id => 'out')
+      assert_same device, interaction.device
     end
     
     it 'creates device with given input_device_id/output_device_id' do
-      Launchpad::Device.expects(:new).with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true).returns('device')
-      assert_equal 'device', Launchpad::Interaction.new(:input_device_id => 'in', :output_device_id => 'out').device
+      device = Launchpad::Device.new
+      Launchpad::Device.expects(:new).
+        with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true).
+        returns(device)
+      interaction = Launchpad::Interaction.new(:input_device_id => 'in', :output_device_id => 'out')
+      assert_same device, interaction.device
     end
     
     it 'initializes device if given' do
-      assert_equal 'device', Launchpad::Interaction.new(:device => 'device').device
+      device = Launchpad::Device.new
+      interaction = Launchpad::Interaction.new(:device => device)
+      assert_same device, interaction.device
     end
     
-    it 'is not be active' do
+    it 'doesn\'t activate the interaction' do
       assert !Launchpad::Interaction.new.active
     end
     
