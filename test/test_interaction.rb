@@ -53,7 +53,7 @@ describe Launchpad::Interaction do
     it 'creates device with given input_device_id' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:input_device_id => 'in', :input => true, :output => false).
+        with(:input_device_id => 'in', :input => true, :output => true).
         returns(device)
       interaction = Launchpad::Interaction.new(:input_device_id => 'in')
       assert_same device, interaction.device
@@ -62,7 +62,7 @@ describe Launchpad::Interaction do
     it 'creates device with given output_device_id' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:output_device_id => 'out', :input => false, :output => true).
+        with(:output_device_id => 'out', :input => true, :output => true).
         returns(device)
       interaction = Launchpad::Interaction.new(:output_device_id => 'out')
       assert_same device, interaction.device

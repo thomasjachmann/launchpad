@@ -47,14 +47,7 @@ module Launchpad
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def initialize(opts = nil)
       opts ||= {}
-      @device = opts[:device]
-      if @device.nil?
-        input_device_id = !opts[:input_device_id].nil?
-        output_device_id = !opts[:output_device_id].nil?
-        input = input_device_id || !output_device_id
-        output= output_device_id || !input_device_id
-        @device = Device.new(opts.merge(:input => input, :output => output))
-      end
+      @device = opts[:device] || Device.new(opts.merge(:input => true, :output => true))
       @latency = (opts[:latency] || 0.001).to_f.abs
       @active = false
     end
