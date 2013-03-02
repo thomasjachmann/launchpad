@@ -72,8 +72,10 @@ This is an interaction example lighting all grid buttons in red when pressed and
 For more details, see the examples. examples/color_picker.rb is the most complex example with interaction.
 
 
-== Near future plans
+== Future plans
 
+* refactor interaction multithreading
+* test on 1.8.7 and 2.0.0
 * interaction responses for presses on single grid buttons/button areas
 * bitmap rendering
 * internal tracking of LED states for both buffers
