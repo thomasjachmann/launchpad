@@ -35,7 +35,7 @@ describe Launchpad::Interaction do
     it 'creates device if not given' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:input => true, :output => true).
+        with(:input => true, :output => true, :logger => nil).
         returns(device)
       interaction = Launchpad::Interaction.new
       assert_same device, interaction.device
@@ -44,7 +44,7 @@ describe Launchpad::Interaction do
     it 'creates device with given device_name' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:device_name => 'device', :input => true, :output => true).
+        with(:device_name => 'device', :input => true, :output => true, :logger => nil).
         returns(device)
       interaction = Launchpad::Interaction.new(:device_name => 'device')
       assert_same device, interaction.device
@@ -53,7 +53,7 @@ describe Launchpad::Interaction do
     it 'creates device with given input_device_id' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:input_device_id => 'in', :input => true, :output => true).
+        with(:input_device_id => 'in', :input => true, :output => true, :logger => nil).
         returns(device)
       interaction = Launchpad::Interaction.new(:input_device_id => 'in')
       assert_same device, interaction.device
@@ -62,7 +62,7 @@ describe Launchpad::Interaction do
     it 'creates device with given output_device_id' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:output_device_id => 'out', :input => true, :output => true).
+        with(:output_device_id => 'out', :input => true, :output => true, :logger => nil).
         returns(device)
       interaction = Launchpad::Interaction.new(:output_device_id => 'out')
       assert_same device, interaction.device
@@ -71,7 +71,7 @@ describe Launchpad::Interaction do
     it 'creates device with given input_device_id/output_device_id' do
       device = Launchpad::Device.new
       Launchpad::Device.expects(:new).
-        with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true).
+        with(:input_device_id => 'in', :output_device_id => 'out', :input => true, :output => true, :logger => nil).
         returns(device)
       interaction = Launchpad::Interaction.new(:input_device_id => 'in', :output_device_id => 'out')
       assert_same device, interaction.device
@@ -82,11 +82,30 @@ describe Launchpad::Interaction do
       interaction = Launchpad::Interaction.new(:device => device)
       assert_same device, interaction.device
     end
+
+    it 'stores the logger given' do
+      logger = Logger.new(nil)
+      interaction = Launchpad::Interaction.new(:logger => logger)
+      assert_same logger, interaction.logger
+      assert_same logger, interaction.device.logger
+    end
     
     it 'doesn\'t activate the interaction' do
       assert !Launchpad::Interaction.new.active
     end
     
+  end
+
+  describe '#logger=' do
+
+    it 'stores the logger and passes it to the device as well' do
+      logger = Logger.new(nil)
+      interaction = Launchpad::Interaction.new
+      interaction.logger = logger
+      assert_same logger, interaction.logger
+      assert_same logger, interaction.device.logger
+    end
+
   end
   
   describe '#close' do

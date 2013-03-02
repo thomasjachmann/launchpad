@@ -1,6 +1,7 @@
 require 'portmidi'
 
 require 'launchpad/errors'
+require 'launchpad/logging'
 require 'launchpad/midi_codes'
 require 'launchpad/version'
 
@@ -21,6 +22,7 @@ module Launchpad
   #   device.change :grid, :x => 4, :y => 4, :red => :high, :green => :low
   class Device
     
+    include Logging
     include MidiCodes
     
     # Initializes the launchpad device. When output capabilities are requested,
@@ -38,6 +40,7 @@ module Launchpad
     #                               optional, <tt>:device_name</tt> will be used if omitted
     # [<tt>:device_name</tt>]       Name of the MIDI device to use,
     #                               optional, defaults to "Launchpad"
+    # [<tt>:logger</tt>]            [Logger] to be used by this device instance, can be changed afterwards
     # 
     # Errors raised:
     # 
@@ -49,6 +52,8 @@ module Launchpad
         :output       => true
       }.merge(opts || {})
       
+      self.logger = opts[:logger]
+
       Portmidi.start
       
       @input = device(Portmidi.input_devices, Portmidi::Input, :id => opts[:input_device_id], :name => opts[:device_name]) if opts[:input]

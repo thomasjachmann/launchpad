@@ -1,4 +1,5 @@
 require 'launchpad/device'
+require 'launchpad/logging'
 
 module Launchpad
   
@@ -18,6 +19,8 @@ module Launchpad
   #   
   #   interaction.start
   class Interaction
+
+    include Logging
     
     # Returns the Launchpad::Device the Launchpad::Interaction acts on.
     attr_reader :device
@@ -39,6 +42,7 @@ module Launchpad
     #                               optional, defaults to "Launchpad"
     # [<tt>:latency</tt>]           delay (in s, fractions allowed) between MIDI pulls,
     #                               optional, defaults to 0.001 (1ms)
+    # [<tt>:logger</tt>]            [Logger] to be used by this interaction instance, can be changed afterwards
     # 
     # Errors raised:
     # 
@@ -46,11 +50,25 @@ module Launchpad
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
     def initialize(opts = nil)
       opts ||= {}
-      @device = opts[:device] || Device.new(opts.merge(:input => true, :output => true))
+      self.logger = opts[:logger]
+      @device = opts[:device]
+      @device ||= Device.new(opts.merge(
+        :input => true,
+        :output => true,
+        :logger => opts[:logger]
+      ))
       @latency = (opts[:latency] || 0.001).to_f.abs
       @active = false
     end
-    
+
+    # Sets the logger to be used by the current instance and the device.
+    # 
+    # [+logger+]  the [Logger] instance
+    def logger=(logger)
+      @logger = logger
+      @device.logger = logger if @device
+    end
+
     # Closes the interaction's device - nothing can be done with the interaction/device afterwards.
     # 
     # Errors raised:

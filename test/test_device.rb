@@ -123,6 +123,12 @@ describe Launchpad::Device do
       end
     end
     
+    it 'stores the logger given' do
+      logger = Logger.new(nil)
+      device = Launchpad::Device.new(:logger => logger)
+      assert_same logger, device.logger
+    end
+    
   end
   
   describe '#close' do
