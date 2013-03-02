@@ -31,12 +31,7 @@ If you're into other languages or want to know what goes on behind the scenes MI
 
 == Installation
 
-The gem is hosted on Gemcutter[http://gemcutter.org/], so in order to use it, you're gonna install the gemcutter gem (for details, see their site):
-
-  gem install gemcutter
-  gem tumble
-
-After that, it's a simple gem install:
+The gem is hosted on RubyGems[https://rubygems.org/], so in order to use it, you're gonna gem install it:
 
   gem install launchpad
 
