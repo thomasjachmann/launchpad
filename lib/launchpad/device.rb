@@ -57,8 +57,15 @@ module Launchpad
 
       Portmidi.start
       
-      @input = device(Portmidi.input_devices, Portmidi::Input, :id => opts[:input_device_id], :name => opts[:device_name]) if opts[:input]
-      @output = device(Portmidi.output_devices, Portmidi::Output, :id => opts[:output_device_id], :name => opts[:device_name]) if opts[:output]
+      @input = create_device!(Portmidi.input_devices, Portmidi::Input,
+        :id => opts[:input_device_id],
+        :name => opts[:device_name]
+      ) if opts[:input]
+      @output = create_device!(Portmidi.output_devices, Portmidi::Output,
+        :id => opts[:output_device_id],
+        :name => opts[:device_name]
+      ) if opts[:output]
+
       reset if output_enabled?
     end
     
@@ -311,7 +318,7 @@ module Launchpad
     # 
     # [Launchpad::NoSuchDeviceError] when device with ID or name specified does not exist
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
-    def device(devices, device_type, opts)
+    def create_device!(devices, device_type, opts)
       logger.debug "creating #{device_type} with #{opts.inspect}, choosing from portmidi devices #{devices.inspect}"
       id = opts[:id]
       if id.nil?
