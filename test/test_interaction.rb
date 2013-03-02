@@ -90,17 +90,16 @@ describe Launchpad::Interaction do
   end
   
   describe '#close' do
-    
-    it 'is not be active' do
+
+    it 'stops the interaction' do
       interaction = Launchpad::Interaction.new
-      interaction.start(:detached => true)
+      interaction.expects(:stop)
       interaction.close
-      assert !interaction.active
     end
     
-    it 'closes device' do
-      interaction = Launchpad::Interaction.new(:device => device = Launchpad::Device.new)
-      device.expects(:close)
+    it 'closes the device' do
+      interaction = Launchpad::Interaction.new
+      interaction.device.expects(:close)
       interaction.close
     end
     
@@ -245,6 +244,13 @@ describe Launchpad::Interaction do
   end
   
   describe '#stop' do
+    
+    it 'deactivates the interaction' do
+      interaction = Launchpad::Interaction.new
+      interaction.start(:detached => true)
+      interaction.stop
+      assert !interaction.active
+    end
     
     it 'sets active to false in blocking mode' do
       i = Launchpad::Interaction.new
