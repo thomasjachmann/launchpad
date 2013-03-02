@@ -18,8 +18,10 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake"
   if RUBY_VERSION < "1.9"
     s.add_development_dependency "minitest"
+    s.add_development_dependency "ruby-debug"
   else
     s.add_development_dependency "minitest-reporters"
+    s.add_development_dependency "debugger"
   end
   s.add_development_dependency "mocha"
 

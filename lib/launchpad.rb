@@ -30,4 +30,5 @@ require 'launchpad/interaction'
 #                       * <tt>:buffering</tt> (LED is written to buffer, see Launchpad::Device.start_buffering, Launchpad::Device.flush_buffer)
 #                       optional, defaults to <tt>:normal</tt>
 # [+state+]             whether the button is pressed or released, <tt>:down/:up</tt>
-module Launchpad; end
+module Launchpad
+end
