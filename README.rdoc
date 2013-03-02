@@ -45,7 +45,6 @@ There are two main entry points:
 
 This is a simple example (only requiring the device for output) that switches on all LEDs (for testing), resets the launchpad again and then lights the grid button at position 4/4 (from top left).
 
-  require 'rubygems'
   require 'launchpad/device'
   
   device = Launchpad::Device.new
@@ -57,7 +56,6 @@ This is a simple example (only requiring the device for output) that switches on
 
 This is an interaction example lighting all grid buttons in red when pressed and keeping them lit.
 
-  require 'rubygems'
   require 'launchpad'
   
   interaction = Launchpad::Interaction.new

@@ -1,4 +1,4 @@
-require File.expand_path('../setup', __FILE__)
+require 'launchpad'
 
 device = Launchpad::Device.new(:input => false, :output => true)
 

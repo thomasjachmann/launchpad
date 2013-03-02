@@ -11,7 +11,6 @@ module Launchpad
   # 
   # Example:
   # 
-  #   require 'rubygems'
   #   require 'launchpad/device'
   #   
   #   device = Launchpad::Device.new

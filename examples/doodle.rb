@@ -1,4 +1,4 @@
-require File.expand_path('../setup', __FILE__)
+require 'launchpad'
 
 interaction = Launchpad::Interaction.new
 

@@ -6,7 +6,6 @@ module Launchpad
   # 
   # Example:
   # 
-  #   require 'rubygems'
   #   require 'launchpad'
   #   
   #   interaction = Launchpad::Interaction.new
