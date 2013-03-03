@@ -279,6 +279,7 @@ module Launchpad
     end
     
     # Reads user actions (button presses/releases) that haven't been handled yet.
+    # This is non-blocking, so when nothing happend yet you'll get an empty array.
     # 
     # Returns:
     # 
