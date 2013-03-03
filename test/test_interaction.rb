@@ -6,28 +6,11 @@ class BreakError < StandardError; end
 describe Launchpad::Interaction do
 
   # returns true/false whether the operation ended or the timeout was hit
-  def timeout(&block)
-    Timeout.timeout(0.02, &block)
+  def timeout(timeout = 0.02, &block)
+    Timeout.timeout(timeout, &block)
     true
   rescue Timeout::Error
     false
-  end
-
-  # starts the given interaction in blocking mode, but doesn't block
-  # returns true/false whether the interaction could be started within 0.02 sec
-  def start_blocking(interaction)
-    c = Thread.current
-    t = Thread.new do
-      begin
-        interaction.start
-      rescue Exception => e
-        # reraise on the main thread
-        c.raise e
-      end
-    end
-    timeout do
-      while !interaction.active; end # loop until interaction is active
-    end
   end
 
   describe '#initialize' do
@@ -138,7 +121,7 @@ describe Launchpad::Interaction do
   describe '#start' do
     
     before do
-      @interaction = Launchpad::Interaction.new(:device => @device = Launchpad::Device.new)
+      @interaction = Launchpad::Interaction.new
     end
     
     after do
@@ -150,99 +133,117 @@ describe Launchpad::Interaction do
       end
     end
     
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     it 'sets active to true in blocking mode' do
       refute @interaction.active
-      assert start_blocking(@interaction)
+      erg = timeout { @interaction.start }
+      refute erg, 'there was no timeout'
+      assert @interaction.active
     end
     
     it 'sets active to true in detached mode' do
+      refute @interaction.active
       @interaction.start(:detached => true)
       assert @interaction.active
     end
     
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    it 'starts a new thread and block in blocking mode' do
-      t = Thread.new {}
-      Thread.expects(:new).returns(t)
-      t.expects(:join).once
-      @interaction.start
+    it 'blocks in blocking mode' do
+      erg = timeout { @interaction.start }
+      refute erg, 'there was no timeout'
     end
     
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    it 'starts a new thread and return in detached mode' do
-      t = Thread.new {}
-      Thread.expects(:new).returns(t)
-      t.expects(:join).never
-      @interaction.start(:detached => true)
+    it 'returns immediately in detached mode' do
+      erg = timeout { @interaction.start(:detached => true) }
+      assert erg, 'there was a timeout'
     end
     
     it 'raises CommunicationError when Portmidi::DeviceError occurs' do
-      @device.stubs(:read_pending_actions).raises(Portmidi::DeviceError.new(0))
+      @interaction.device.stubs(:read_pending_actions).raises(Portmidi::DeviceError.new(0))
       assert_raises Launchpad::CommunicationError do
         @interaction.start
       end
     end
-    
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    it 'calls respond_to_action with actions from respond_to_action' do
-      @interaction.response_to(:mixer, :down) { @mixer_down = true }
-      # strangely, you have to sleep 0.001 or do anything else before
-      # calling i.stop - the ThreadError won't be thrown otherwise...
-      @interaction.response_to(:mixer, :up) {|i,a| sleep 0.001; i.stop}
-      @device.stubs(:read_pending_actions).returns([
-        {
-          :timestamp  => 0,
-          :state      => :down,
-          :type       => :mixer
-        },
-        {
-          :timestamp  => 0,
-          :state      => :up,
-          :type       => :mixer
-        }
-      ])
-      erg = timeout do
-        @interaction.start
+
+    describe 'action handling' do
+
+      before do
+        @interaction.response_to(:mixer, :down) { @mixer_down = true }
+        @interaction.response_to(:mixer, :up) {|i,a| i.stop}
+        @interaction.device.expects(:read_pending_actions).
+          at_least_once.
+          returns([
+            {
+              :timestamp  => 0,
+              :state      => :down,
+              :type       => :mixer
+            },
+            {
+              :timestamp  => 0,
+              :state      => :up,
+              :type       => :mixer
+            }
+          ])
+      end
+      
+      it 'calls respond_to_action with actions from respond_to_action in blocking mode' do
+        erg = timeout { @interaction.start }
+        assert erg, 'the actions weren\'t called'
         assert @mixer_down
       end
-      assert erg, "the actions weren't called"
+      
+      it 'calls respond_to_action with actions from respond_to_action in detached mode' do
+        @interaction.start(:detached => true)
+        erg = timeout(0.5) { while @interaction.active; end }
+        assert erg, 'there was a timeout'
+        assert @mixer_down
+      end
+
     end
     
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
     describe 'latency' do
       
       before do
-        @device.stubs(:read_pending_actions).returns([])
+        @device = @interaction.device
+        @times = []
+        @device.instance_variable_set("@test_interaction_latency_times", @times)
+        def @device.read_pending_actions
+          @test_interaction_latency_times << Time.now.to_f
+          []
+        end
       end
       
-      it 'sleeps with default latency of 0.001 when none given' do
-        assert_raises BreakError do
-          @interaction.expects(:sleep).with(0.001).raises(BreakError)
-          @interaction.start
+      it 'sleeps with default latency of 0.001s when none given' do
+        timeout { @interaction.start }
+        assert @times.size > 1
+        @times.each_cons(2) do |a,b|
+          assert_in_delta 0.001, b - a, 0.01
         end
       end
       
       it 'sleeps with given latency' do
-        assert_raises BreakError do
-          @interaction = Launchpad::Interaction.new(:latency => 4, :device => @device)
-          @interaction.expects(:sleep).with(4).raises(BreakError)
-          @interaction.start
+        @interaction = Launchpad::Interaction.new(:latency => 0.5, :device => @device)
+        timeout(0.55) { @interaction.start }
+        assert @times.size > 1
+        @times.each_cons(2) do |a,b|
+          assert_in_delta 0.5, b - a, 0.01
         end
       end
       
       it 'sleeps with absolute value of given negative latency' do
-        assert_raises BreakError do
-          @interaction = Launchpad::Interaction.new(:latency => -3.1, :device => @device)
-          @interaction.expects(:sleep).with(3.1).raises(BreakError)
-          @interaction.start
+        @interaction = Launchpad::Interaction.new(:latency => -0.1, :device => @device)
+        timeout(0.15) { @interaction.start }
+        assert @times.size > 1
+        @times.each_cons(2) do |a,b|
+          assert_in_delta 0.1, b - a, 0.01
         end
       end
       
       it 'does not sleep when latency is 0' do
         @interaction = Launchpad::Interaction.new(:latency => 0, :device => @device)
-        @interaction.expects(:sleep).never
-        timeout { @interaction.start }
+        timeout(0.001) { @interaction.start }
+        assert @times.size > 1
+        @times.each_cons(2) do |a,b|
+          assert_in_delta 0, b - a, 0.1
+        end
       end
       
     end
@@ -263,56 +264,40 @@ describe Launchpad::Interaction do
   end
   
   describe '#stop' do
-    
-    it 'deactivates the interaction' do
-      interaction = Launchpad::Interaction.new
-      interaction.start(:detached => true)
-      interaction.stop
-      assert !interaction.active
+
+    before do
+      @interaction = Launchpad::Interaction.new
     end
     
     it 'sets active to false in blocking mode' do
-      i = Launchpad::Interaction.new
-      assert start_blocking(i)
-      i.stop
-      assert !i.active
+      erg = timeout { @interaction.start }
+      refute erg, 'there was no timeout'
+      assert @interaction.active
+      @interaction.stop
+      assert !@interaction.active
     end
     
     it 'sets active to false in detached mode' do
-      i = Launchpad::Interaction.new
-      i.start(:detached => true)
-      assert i.active
-      i.stop
-      assert !i.active
+      @interaction.start(:detached => true)
+      assert @interaction.active
+      @interaction.stop
+      assert !@interaction.active
     end
     
     it 'is callable anytime' do
-      i = Launchpad::Interaction.new
-      i.stop
-      i.start(:detached => true)
-      i.stop
-      i.stop
-    end
-    
-    # this is kinda greybox tested, since I couldn't come up with another way to test thread handling [thomas, 2010-01-24]
-    it 'calls run and joins on a running reader thread' do
-      t = Thread.new {sleep}
-      Thread.expects(:new).returns(t)
-      t.expects(:run)
-      t.expects(:join)
-      i = Launchpad::Interaction.new
-      i.start(:detached => true)
-      i.stop
+      @interaction.stop
+      @interaction.start(:detached => true)
+      @interaction.stop
+      @interaction.stop
     end
     
     # this is kinda greybox tested, since I couldn't come up with another way to test tread handling [thomas, 2010-01-24]
     it 'raises pending exceptions in detached mode' do
       t = Thread.new {raise BreakError}
       Thread.expects(:new).returns(t)
-      i = Launchpad::Interaction.new
-      i.start(:detached => true)
+      @interaction.start(:detached => true)
       assert_raises BreakError do
-        i.stop
+        @interaction.stop
       end
     end
     
@@ -375,19 +360,22 @@ describe Launchpad::Interaction do
   
   describe 'regression tests' do
     
-    it 'does not raise an exception when calling stop within a response in attached mode' do
-      i = Launchpad::Interaction.new
-      # strangely, you have to sleep 0.001 or do anything else before
-      # calling i.stop - the ThreadError won't be thrown otherwise...
-      i.response_to(:mixer, :down) {|i,a| sleep 0.001, i.stop}
-      i.device.stubs(:read_pending_actions).returns([{
-        :timestamp  => 0,
-        :state      => :down,
-        :type       => :mixer
-      }])
-      Thread.new { i.start }.join
-      # erg = timeout { i.start }
-      # assert erg, "the actions weren't called"
+    it 'does not raise an exception or write an error to the logger when calling stop within a response in attached mode' do
+      log = StringIO.new
+      logger = Logger.new(log)
+      logger.level = Logger::ERROR
+      i = Launchpad::Interaction.new(:logger => logger)
+      i.response_to(:mixer, :down) {|i,a| i.stop}
+      i.device.expects(:read_pending_actions).
+        at_least_once.
+        returns([{
+          :timestamp  => 0,
+          :state      => :down,
+          :type       => :mixer
+        }])
+      erg = timeout { i.start }
+      # assert erg, 'the actions weren\'t called'
+      assert_equal '', log.string
     end
     
   end

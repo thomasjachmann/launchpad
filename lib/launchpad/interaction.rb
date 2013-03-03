@@ -62,6 +62,8 @@ module Launchpad
       ))
       @latency = (opts[:latency] || 0.001).to_f.abs
       @active = false
+
+      @action_threads = ThreadGroup.new
     end
 
     # Sets the logger to be used by the current instance and the device.
@@ -105,20 +107,30 @@ module Launchpad
     # [Launchpad::CommunicationError] when anything unexpected happens while communicating with the launchpad
     def start(opts = nil)
       logger.debug "starting Launchpad::Interaction##{object_id}"
+
       opts = {
         :detached => false
       }.merge(opts || {})
+
       @active = true
-      # TODO rescue and reraise reader exceptions onto the main thread
+
       @reader_thread ||= Thread.new do
         begin
           while @active do
-            # TODO rescue and reraise action exceptions onto the main thread
-            @device.read_pending_actions.each {|action| Thread.new {respond_to_action(action)}}
-            sleep @latency unless @latency <= 0
+            @device.read_pending_actions.each do |action|
+              action_thread = Thread.new(action) do |action|
+                respond_to_action(action)
+              end
+              @action_threads.add(action_thread)
+            end
+            sleep @latency# if @latency > 0.0
           end
         rescue Portmidi::DeviceError => e
+          logger.fatal "could not read from device, stopping to read actions"
           raise CommunicationError.new(e)
+        rescue Exception => e
+          logger.fatal "error causing action reading to stop: #{e.inspect}"
+          raise e
         ensure
           @device.reset
         end
@@ -140,6 +152,15 @@ module Launchpad
         @reader_thread.run if @reader_thread.alive?
         @reader_thread.join
         @reader_thread = nil
+      end
+    ensure
+      @action_threads.list.each do |thread|
+        begin
+          thread.kill
+          thread.join
+        rescue Exception => e
+          logger.error "error when killing action thread: #{e.inspect}"
+        end
       end
       nil
     end
@@ -229,6 +250,9 @@ module Launchpad
       state = action[:state].to_sym
       (responses[type][state] + responses[:all][state]).each {|block| block.call(self, action)}
       nil
+    rescue Exception => e
+      logger.error "error when responding to action #{action.inspect}: #{e.inspect}"
+      raise e
     end
     
   end
