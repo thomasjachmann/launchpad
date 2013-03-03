@@ -29,6 +29,15 @@ If you're into other languages or want to know what goes on behind the scenes MI
 * Jan Krutisch's {portmidi gem}[http://github.com/halfbyte/portmidi]
 
 
+== Compatibility
+
+The gem is known to be compatible with the following ruby versions:
+
+* MRI 1.8.7
+* MRI 1.9.3
+* MRI 2.0.0
+
+
 == Installation
 
 The gem is hosted on RubyGems[https://rubygems.org/], so in order to use it, you're gonna gem install it:
@@ -74,7 +83,6 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Future plans
 
-* test on 2.0.0
 * interaction responses for presses on single grid buttons/button areas
 * bitmap rendering
 * internal tracking of LED states for both buffers
@@ -84,6 +92,7 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 * logging
 * reworked multi threading for action handling
+* compatibility with ruby 1.8.7 and 2.0.0
 
 === v.0.2.2
 
