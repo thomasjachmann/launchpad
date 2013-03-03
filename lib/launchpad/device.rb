@@ -25,6 +25,44 @@ module Launchpad
     include Logging
     include MidiCodes
     
+    CODE_NOTE_TO_DATA_TYPE = {
+      [Status::ON, SceneButton::SCENE1]     => :scene1,
+      [Status::ON, SceneButton::SCENE2]     => :scene2,
+      [Status::ON, SceneButton::SCENE3]     => :scene3,
+      [Status::ON, SceneButton::SCENE4]     => :scene4,
+      [Status::ON, SceneButton::SCENE5]     => :scene5,
+      [Status::ON, SceneButton::SCENE6]     => :scene6,
+      [Status::ON, SceneButton::SCENE7]     => :scene7,
+      [Status::ON, SceneButton::SCENE8]     => :scene8,
+      [Status::CC, ControlButton::UP]       => :up,
+      [Status::CC, ControlButton::DOWN]     => :down,
+      [Status::CC, ControlButton::LEFT]     => :left,
+      [Status::CC, ControlButton::RIGHT]    => :right,
+      [Status::CC, ControlButton::SESSION]  => :session,
+      [Status::CC, ControlButton::USER1]    => :user1,
+      [Status::CC, ControlButton::USER2]    => :user2,
+      [Status::CC, ControlButton::MIXER]    => :mixer
+    }.freeze
+
+    TYPE_TO_NOTE = {
+      :up       => ControlButton::UP,
+      :down     => ControlButton::DOWN,
+      :left     => ControlButton::LEFT,
+      :right    => ControlButton::RIGHT,
+      :session  => ControlButton::SESSION,
+      :user1    => ControlButton::USER1,
+      :user2    => ControlButton::USER2,
+      :mixer    => ControlButton::MIXER,
+      :scene1   => SceneButton::SCENE1,
+      :scene2   => SceneButton::SCENE2,
+      :scene3   => SceneButton::SCENE3,
+      :scene4   => SceneButton::SCENE4,
+      :scene5   => SceneButton::SCENE5,
+      :scene6   => SceneButton::SCENE6,
+      :scene7   => SceneButton::SCENE7,
+      :scene8   => SceneButton::SCENE8
+    }.freeze
+
     # Initializes the launchpad device. When output capabilities are requested,
     # the launchpad will be reset.
     # 
@@ -262,33 +300,10 @@ module Launchpad
           :timestamp  => midi_message[:timestamp],
           :state      => (velocity == 127 ? :down : :up)
         }
-        data[:type] = case code
-        when Status::ON
-          case note
-          when SceneButton::SCENE1 then :scene1
-          when SceneButton::SCENE2 then :scene2
-          when SceneButton::SCENE3 then :scene3
-          when SceneButton::SCENE4 then :scene4
-          when SceneButton::SCENE5 then :scene5
-          when SceneButton::SCENE6 then :scene6
-          when SceneButton::SCENE7 then :scene7
-          when SceneButton::SCENE8 then :scene8
-          else
-            data[:x] = note % 16
-            data[:y] = note / 16
-            :grid
-          end
-        when Status::CC
-          case note
-          when ControlButton::UP       then :up
-          when ControlButton::DOWN     then :down
-          when ControlButton::LEFT     then :left
-          when ControlButton::RIGHT    then :right
-          when ControlButton::SESSION  then :session
-          when ControlButton::USER1    then :user1
-          when ControlButton::USER2    then :user2
-          when ControlButton::MIXER    then :mixer
-          end
+        data[:type] = CODE_NOTE_TO_DATA_TYPE[[code, note]] || :grid
+        if data[:type] == :grid
+          data[:x] = note % 16
+          data[:y] = note / 16
         end
         data
       end
@@ -415,32 +430,17 @@ module Launchpad
     # 
     # [Launchpad::NoValidGridCoordinatesError] when coordinates aren't within the valid range
     def note(type, opts)
-      case type
-      when :up      then ControlButton::UP
-      when :down    then ControlButton::DOWN
-      when :left    then ControlButton::LEFT
-      when :right   then ControlButton::RIGHT
-      when :session then ControlButton::SESSION
-      when :user1   then ControlButton::USER1
-      when :user2   then ControlButton::USER2
-      when :mixer   then ControlButton::MIXER
-      when :scene1  then SceneButton::SCENE1
-      when :scene2  then SceneButton::SCENE2
-      when :scene3  then SceneButton::SCENE3
-      when :scene4  then SceneButton::SCENE4
-      when :scene5  then SceneButton::SCENE5
-      when :scene6  then SceneButton::SCENE6
-      when :scene7  then SceneButton::SCENE7
-      when :scene8  then SceneButton::SCENE8
-      else
+      note = TYPE_TO_NOTE[type]
+      if note.nil?
         x = (opts[:x] || -1).to_i
         y = (opts[:y] || -1).to_i
         if x < 0 || x > 7 || y < 0 || y > 7
           logger.error "wrong coordinates specified: x=#{x}, y=#{y}"
           raise NoValidGridCoordinatesError.new("you need to specify valid coordinates (x/y, 0-7, from top left), you specified: x=#{x}, y=#{y}")
         end
-        y * 16 + x
+        note = y * 16 + x
       end
+      note
     end
     
     # Calculates the MIDI data 2 value (velocity) for given brightness and mode values.
