@@ -89,6 +89,8 @@ For more details, see the examples. examples/color_picker.rb is the most complex
 
 == Changelog
 
+=== v.0.3.0
+
 * logging
 * reworked multi threading for action handling
 * compatibility with ruby 1.8.7 and 2.0.0
