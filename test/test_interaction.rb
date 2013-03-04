@@ -13,6 +13,24 @@ describe Launchpad::Interaction do
     false
   end
 
+  def press(interaction, type, opts = nil)
+    interaction.respond_to(type, :down, opts)
+    interaction.respond_to(type, :up, opts)
+  end
+
+
+  def press_all(interaction)
+    %w(up down left right session user1 user2 mixer).each do |type|
+      press(interaction, type.to_sym)
+    end
+    8.times do |y|
+      8.times do |x|
+        press(interaction, :grid, :x => x, :y => y)
+      end
+      press(interaction, :"scene#{y + 1}")
+    end
+  end
+
   describe '#initialize' do
     
     it 'creates device if not given' do
@@ -366,6 +384,49 @@ describe Launchpad::Interaction do
       @interaction.respond_to(:down, :down)
       @interaction.respond_to(:up, :down)
       assert_equal [:up, :down, :up], @downs
+    end
+
+    describe 'allows to bind to specific grid buttons' do
+
+      before do
+        @downs = []
+        @action = lambda {|i, a| @downs << [a[:x], a[:y]]}
+      end
+
+      it 'one specific grid button' do
+        @interaction.response_to(:grid, :down, :x => 4, :y => 2, &@action)
+        press_all @interaction
+        assert_equal [[4, 2]], @downs
+      end
+
+      it 'a complete row of grid buttons' do
+        @interaction.response_to(:grid, :down, :y => 2, &@action)
+        press_all @interaction
+        assert_equal [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2]], @downs
+      end
+
+      it 'a complete column of grid buttons' do
+        @interaction.response_to(:grid, :down, :x => 3, &@action)
+        press_all @interaction
+        assert_equal [[3, 0], [3, 1], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6], [3, 7]], @downs
+      end
+
+      it 'a complex range of grid buttons' do
+        @interaction.response_to(:grid, :down, :x => [1,[2]], :y => [1, 3..5], &@action)
+        press_all @interaction
+        assert_equal [[1, 1], [2, 1], [1, 3], [2, 3], [1, 4], [2, 4], [1, 5], [2, 5]], @downs
+      end
+
+      it 'a specific grid buttons, a column, a row, all grid buttons and all buttons' do
+        @interaction.response_to(:all, :down) {|i, a| @downs << [a[:x], a[:y], :all]}
+        @interaction.response_to(:grid, :down) {|i, a| @downs << [a[:x], a[:y], :grid]}
+        @interaction.response_to(:grid, :down, :x => 0) {|i, a| @downs << [a[:x], a[:y], :col]}
+        @interaction.response_to(:grid, :down, :y => 0) {|i, a| @downs << [a[:x], a[:y], :row]}
+        @interaction.response_to(:grid, :down, :x => 0, :y => 0, &@action)
+        press @interaction, :grid, :x => 0, :y => 0
+        assert_equal [[0, 0], [0, 0, :col], [0, 0, :row], [0, 0, :grid], [0, 0, :all]], @downs
+      end
+
     end
     
   end

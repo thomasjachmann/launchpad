@@ -179,6 +179,10 @@ module Launchpad
     # [<tt>:exclusive</tt>] <tt>true/false</tt>,
     #                       whether to deregister all other responses to the specified actions,
     #                       optional, defaults to +false+
+    # [<tt>:x</tt>]         x coordinate(s), can contain arrays and ranges, when specified
+    #                       without y coordinate, it's interpreted as a whole column
+    # [<tt>:y</tt>]         y coordinate(s), can contain arrays and ranges, when specified
+    #                       without x coordinate, it's interpreted as a whole row
     # 
     # Takes a block which will be called when an action matching the parameters occurs.
     # 
@@ -192,7 +196,11 @@ module Launchpad
       opts ||= {}
       no_response_to(types, state) if opts[:exclusive] == true
       Array(state == :both ? %w(down up) : state).each do |state|
-        types.each {|type| responses[type.to_sym][state.to_sym] << block}
+        types.each do |type|
+          combined_types(type, opts).each do |combined_type|
+            responses[combined_type][state.to_sym] << block
+          end
+        end
       end
       nil
     end
@@ -207,11 +215,22 @@ module Launchpad
     #           optional, defaults to +nil+, meaning "all responses"
     # [+state+] button state to respond to,
     #           additional value <tt>:both</tt>
-    def no_response_to(types = nil, state = :both)
+    # 
+    # Optional options hash:
+    # 
+    # [<tt>:x</tt>] x coordinate(s), can contain arrays and ranges, when specified
+    #               without y coordinate, it's interpreted as a whole column
+    # [<tt>:y</tt>] y coordinate(s), can contain arrays and ranges, when specified
+    #               without x coordinate, it's interpreted as a whole row
+    def no_response_to(types = nil, state = :both, opts = nil)
       logger.debug "removing response to #{types.inspect} for state #{state.inspect}"
       types = Array(types)
       Array(state == :both ? %w(down up) : state).each do |state|
-        types.each {|type| responses[type.to_sym][state.to_sym].clear}
+        types.each do |type|
+          combined_types(type, opts).each do |combined_type|
+            responses[combined_type][state.to_sym].clear
+          end
+        end
       end
       nil
     end
@@ -239,6 +258,52 @@ module Launchpad
     def responses
       @responses ||= Hash.new {|hash, key| hash[key] = {:down => [], :up => []}}
     end
+
+    # Returns an array of grid positions for a range.
+    # 
+    # Parameters:
+    # 
+    # [+range+] the range definitions, can be
+    #           * a Fixnum
+    #           * a Range
+    #           * an Array of Fixnum, Range or Array objects
+    def grid_range(range)
+      return nil if range.nil?
+      Array(range).flatten.map do |pos|
+        pos.respond_to?(:to_a) ? pos.to_a : pos
+      end.flatten.uniq
+    end
+
+    # Returns a list of combined types for the type and opts specified. Combined
+    # types are just the type, except for grid, where the opts are interpreted
+    # and all combinations of x and y coordinates are added as a position suffix.
+    # 
+    # Example:
+    # 
+    # combined_types(:grid, :x => 1..2, y => 2) => [:grid12, :grid22]
+    # 
+    # Parameters (see Launchpad for values):
+    # 
+    # [+type+]  type of the button
+    # 
+    # Optional options hash:
+    # 
+    # [<tt>:x</tt>] x coordinate(s), can contain arrays and ranges, when specified
+    #               without y coordinate, it's interpreted as a whole column
+    # [<tt>:y</tt>] y coordinate(s), can contain arrays and ranges, when specified
+    #               without x coordinate, it's interpreted as a whole row
+    def combined_types(type, opts = nil)
+      if type.to_sym == :grid && opts
+        x = grid_range(opts[:x])
+        y = grid_range(opts[:y])
+        return [:grid] if x.nil? && y.nil?  # whole grid
+        x ||= ['-']                         # whole row
+        y ||= ['-']                         # whole column
+        x.product(y).map {|x, y| :"grid#{x}#{y}"}
+      else
+        [type.to_sym]
+      end
+    end
     
     # Reponds to an action by executing all matching responses.
     # 
@@ -248,7 +313,15 @@ module Launchpad
     def respond_to_action(action)
       type = action[:type].to_sym
       state = action[:state].to_sym
-      (responses[type][state] + responses[:all][state]).each {|block| block.call(self, action)}
+      actions = []
+      if type == :grid
+        actions += responses[:"grid#{action[:x]}#{action[:y]}"][state]
+        actions += responses[:"grid#{action[:x]}-"][state]
+        actions += responses[:"grid-#{action[:y]}"][state]
+      end
+      actions += responses[type][state]
+      actions += responses[:all][state]
+      actions.compact.each {|block| block.call(self, action)}
       nil
     rescue Exception => e
       logger.error "error when responding to action #{action.inspect}: #{e.inspect}"
