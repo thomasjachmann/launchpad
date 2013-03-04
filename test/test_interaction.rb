@@ -358,6 +358,15 @@ describe Launchpad::Interaction do
       assert @mixer
       assert @exclusive_mixer
     end
+
+    it 'allows for multiple types' do
+      @downs = []
+      @interaction.response_to([:up, :down], :down) {|i, a| @downs << a[:type]}
+      @interaction.respond_to(:up, :down)
+      @interaction.respond_to(:down, :down)
+      @interaction.respond_to(:up, :down)
+      assert_equal [:up, :down, :up], @downs
+    end
     
   end
   
