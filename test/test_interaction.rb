@@ -167,7 +167,10 @@ describe Launchpad::Interaction do
 
       before do
         @interaction.response_to(:mixer, :down) { @mixer_down = true }
-        @interaction.response_to(:mixer, :up) {|i,a| i.stop}
+        @interaction.response_to(:mixer, :up) do |i,a|
+          sleep 0.001 # sleep to make "sure" :mixer :down has been processed
+          i.stop
+        end
         @interaction.device.expects(:read_pending_actions).
           at_least_once.
           returns([
@@ -185,16 +188,16 @@ describe Launchpad::Interaction do
       end
       
       it 'calls respond_to_action with actions from respond_to_action in blocking mode' do
-        erg = timeout { @interaction.start }
+        erg = timeout(0.5) { @interaction.start }
         assert erg, 'the actions weren\'t called'
-        assert @mixer_down
+        assert @mixer_down, 'the mixer button wasn\'t pressed'
       end
       
       it 'calls respond_to_action with actions from respond_to_action in detached mode' do
         @interaction.start(:detached => true)
-        erg = timeout(0.5) { while @interaction.active; end }
+        erg = timeout(0.5) { while @interaction.active; sleep 0.01; end }
         assert erg, 'there was a timeout'
-        assert @mixer_down
+        assert @mixer_down, 'the mixer button wasn\'t pressed'
       end
 
     end
