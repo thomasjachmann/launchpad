@@ -1,6 +1,6 @@
 = launchpad
 
-{<img src="https://travis-ci.org/thomasjachmann/launchpad.png" />}[https://travis-ci.org/thomasjachmann/launchpad]
+{<img src="https://travis-ci.org/thomasjachmann/launchpad.png?branch=master" alt="Build Status" />}[https://travis-ci.org/thomasjachmann/launchpad]
 
 This gem provides a ruby interface to access novation's launchpad programmatically. LEDs can be lighted and button presses can be responded to. Internally, launchpad's MIDI input/output is used to accomplish this.
 
