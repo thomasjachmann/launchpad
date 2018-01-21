@@ -338,8 +338,8 @@ module Launchpad
       logger.debug "creating #{device_type} with #{opts.inspect}, choosing from portmidi devices #{devices.inspect}"
       id = opts[:id]
       if id.nil?
-        name = opts[:name] || 'Launchpad'
-        device = devices.select {|device| device.name == name}.first
+        name = opts[:name] || /Launchpad.*/
+        device = devices.select {|device| device.name =~ name}.first
         id = device.device_id unless device.nil?
       end
       if id.nil?
