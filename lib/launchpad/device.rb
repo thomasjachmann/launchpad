@@ -1,5 +1,6 @@
 require 'portmidi'
 
+require 'launchpad/device_layouts'
 require 'launchpad/errors'
 require 'launchpad/logging'
 require 'launchpad/midi_codes'
@@ -60,12 +61,12 @@ module Launchpad
       :scene5   => SceneButton::SCENE5,
       :scene6   => SceneButton::SCENE6,
       :scene7   => SceneButton::SCENE7,
-      :scene8   => SceneButton::SCENE8
+      :scene8   => SceneButton::SCENE8,
     }.freeze
 
-    SUPPORTED_LAUNCHPADS = {
-      'Launchpad' => {},
-      'Launchpad MK2' => {},
+    NAME_TO_DEVICE_LAYOUT = {
+      'Launchpad' => DeviceLayouts::Launchpad,
+      'Launchpad MK2' => DeviceLayouts::LaunchpadMK2,
     }
 
     # Initializes the launchpad device. When output capabilities are requested,
@@ -89,6 +90,7 @@ module Launchpad
     # 
     # [Launchpad::NoSuchDeviceError] when device with ID or name specified does not exist
     # [Launchpad::DeviceBusyError] when device with ID or name specified is busy
+    # [Launchpad::UnknownLayout] when unable to determine the layout to use for the board
     def initialize(opts = nil)
       opts = {
         :input        => true,
@@ -100,14 +102,25 @@ module Launchpad
 
       Portmidi.start
       
-      @input = create_device!(Portmidi.input_devices, Portmidi::Input,
+      input_name, @input = create_device!(Portmidi.input_devices, Portmidi::Input,
         :id => opts[:input_device_id],
         :name => opts[:device_name]
       ) if opts[:input]
-      @output = create_device!(Portmidi.output_devices, Portmidi::Output,
+      output_name, @output = create_device!(Portmidi.output_devices, Portmidi::Output,
         :id => opts[:output_device_id],
         :name => opts[:device_name]
       ) if opts[:output]
+
+      @layout = opts[:device_layout]
+      @layout ||= NAME_TO_DEVICE_LAYOUT[opts[:device_name]] if opts[:device_name]
+      @layout ||= NAME_TO_DEVICE_LAYOUT[input_name] if opts[:input]
+      @layout ||= NAME_TO_DEVICE_LAYOUT[output_name] if opts[:output]
+
+      unless @layout
+        message = "Unable to determine layout to use"
+        logger.fatal message
+        raise UnknownLayout.new(message)
+      end
 
       reset if output_enabled?
     end
@@ -342,23 +355,24 @@ module Launchpad
     def create_device!(devices, device_type, opts)
       logger.debug "creating #{device_type} with #{opts.inspect}, choosing from portmidi devices #{devices.inspect}"
       id = opts[:id]
+      name = opts[:name]
       if id.nil?
-        name = opts[:name]
         device = devices.find do |device|
           if name
             device.name == name
           else
-            SUPPORTED_LAUNCHPADS[device.name]
+            NAME_TO_DEVICE_LAYOUT[device.name]
           end
         end
         id = device.device_id unless device.nil?
+        name ||= device.name
       end
       if id.nil?
         message = "MIDI device #{opts[:id] || opts[:name]} doesn't exist"
         logger.fatal message
         raise NoSuchDeviceError.new(message)
       end
-      device_type.new(id)
+      [name, device_type.new(id)]
     rescue RuntimeError => e
       logger.fatal "error creating #{device_type}: #{e.inspect}"
       raise DeviceBusyError.new(e)
@@ -442,17 +456,21 @@ module Launchpad
     # 
     # [Launchpad::NoValidGridCoordinatesError] when coordinates aren't within the valid range
     def note(type, opts)
-      note = TYPE_TO_NOTE[type]
-      if note.nil?
-        x = (opts[:x] || -1).to_i
-        y = (opts[:y] || -1).to_i
-        if x < 0 || x > 7 || y < 0 || y > 7
-          logger.error "wrong coordinates specified: x=#{x}, y=#{y}"
-          raise NoValidGridCoordinatesError.new("you need to specify valid coordinates (x/y, 0-7, from top left), you specified: x=#{x}, y=#{y}")
-        end
-        note = y * 16 + x
+      return TYPE_TO_NOTE[type] unless %i(record_arm solo mute stop send_a send_b pan volume grid).include?(type)
+
+      x, y = @layout[:BUTTON_LOCATIONS][type]
+      x = opts[:x]&.to_i || x || -1
+      y = opts[:y]&.to_i || y || -1
+
+      if (x < @layout[:MIN_X] ||
+          x > @layout[:MAX_X] ||
+          y < @layout[:MIN_Y] ||
+          y > @layout[:MAX_Y])
+        logger.error "wrong coordinates specified: x=#{x}, y=#{y}"
+        raise NoValidGridCoordinatesError.new("for this layout, you need to specify valid coordinates (x from #{@layout[:MIN_X]}-#{@layout[:MAX_X]} from left, y from #{@layout[:MIN_Y]}-#{@layout[:MAX_Y]} from top left), you specified: x=#{x}, y=#{y}")
       end
-      note
+
+      y * @layout[:GRID_STRIDE] + x + @layout[:GRID_OFFSET]
     end
     
     # Calculates the MIDI data 2 value (velocity) for given brightness and mode values.
@@ -474,19 +492,20 @@ module Launchpad
     # 
     # [Launchpad::NoValidBrightnessError] when brightness values aren't within the valid range
     def velocity(opts)
-      if opts.is_a?(Hash)
-        red = brightness(opts[:red] || 0)
-        green = brightness(opts[:green] || 0)
-        color = 16 * green + red
-        flags = case opts[:mode]
-                when :flashing  then  8
-                when :buffering then  0
-                else                  12
-                end
-        color + flags
-      else
-        opts.to_i + 12
-      end
+      return opts.to_i + 12 unless opts.is_a? Hash
+
+      color = opts[:color]
+      return color.to_i if color
+
+      red = brightness(opts[:red] || 0)
+      green = brightness(opts[:green] || 0)
+      color = 16 * green + red
+      flags = case opts[:mode]
+              when :flashing  then  8
+              when :buffering then  0
+              else                  12
+              end
+      color + flags
     end
     
     # Calculates the integer brightness for given brightness values.

@@ -5,6 +5,9 @@ module Launchpad
   
   # Error raised when the MIDI device specified doesn't exist.
   class NoSuchDeviceError < LaunchpadError; end
+
+  # Error raised when unable to determine a board layout to use.
+  class UnknownLayout < LaunchpadError; end
   
   # Error raised when the MIDI device specified is busy.
   class DeviceBusyError < LaunchpadError; end
